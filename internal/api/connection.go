@@ -103,27 +103,34 @@ func (n *NatsConnectionStore) GetOrReconnect(id string) (*pkg.NATSCredential, bo
 	// Connection is dead, attempt to reconnect
 	log.Printf("Reconnecting to NATS server for connection %s", id)
 
+	old := connInfo.Connection
 	newConn := pkg.NewNATSCredential(connInfo.Config)
 
 	if err := newConn.Connect(); err != nil {
-		// Remove failed connection
+		closeConn(old)
 		delete(n.nastsConns, id)
 		return nil, false, err
 	}
 
-	// Test the reconnection
 	if err := newConn.TestConnection(); err != nil {
 		newConn.Disconnect()
+		closeConn(old)
 		delete(n.nastsConns, id)
 		return nil, false, err
 	}
 
-	// Update connection info
+	closeConn(old)
 	connInfo.Connection = newConn
 	connInfo.LastActivity = time.Now()
 
 	log.Printf("Successfully reconnected to NATS server for connection %s", id)
 	return newConn, true, nil
+}
+
+func closeConn(conn *pkg.NATSCredential) {
+	if conn != nil {
+		conn.Disconnect()
+	}
 }
 
 // RemoveConnection removes and disconnects a specific connection
@@ -132,9 +139,7 @@ func (n *NatsConnectionStore) RemoveConnection(id string) {
 	defer n.mutex.Unlock()
 
 	if connInfo, exists := n.nastsConns[id]; exists {
-		if connInfo.Connection != nil {
-			connInfo.Connection.Disconnect()
-		}
+		closeConn(connInfo.Connection)
 		delete(n.nastsConns, id)
 	}
 }

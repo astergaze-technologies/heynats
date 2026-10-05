@@ -181,7 +181,7 @@ func (nc *NATSCredential) IsHealthy() bool {
 }
 
 func (nc *NATSCredential) Disconnect() {
-	if nc.Conn != nil && nc.Conn.IsConnected() {
+	if nc.Conn != nil {
 		nc.Conn.Close()
 	}
 }
