@@ -7,6 +7,7 @@ import (
 
 	"github.com/astergaze-solutions/heynats/internal/pkg"
 	"github.com/gin-gonic/gin"
+	"github.com/nats-io/nats.go"
 )
 
 type StreamAPI struct {
@@ -198,84 +199,28 @@ func (e *StreamAPI) SubscribeToStreamSubject(c *gin.Context) {
 		return
 	}
 
-	// Set up SSE headers
-	c.Header("Content-Type", "text/event-stream")
-	c.Header("Cache-Control", "no-cache")
-	c.Header("Connection", "keep-alive")
-	c.Header("Access-Control-Allow-Origin", "*")
-	c.Header("Access-Control-Allow-Headers", "Cache-Control")
-
-	// Create a channel for messages
-	msgChan := make(chan []byte, 100)
-	done := make(chan struct{})
-
-	// Subscribe to the subject
-	subscription, err := conn.SubscribeToSubject(subject, func(data []byte, headers map[string]string) {
-		// Create message event
-		message := map[string]interface{}{
-			"subject":   subject,
-			"data":      string(data),
-			"timestamp": pkg.GetCurrentTimestamp(),
-			"headers":   headers,
-		}
-
-		messageJSON, err := pkg.ToJSON(message)
-		if err != nil {
-			return
-		}
-
-		select {
-		case msgChan <- messageJSON:
-		case <-done:
-			return
-		default:
-			// Channel is full, skip message
-		}
+	err := streamSSE(c, sseSubscription{
+		conn:    conn,
+		subject: subject,
+		connected: map[string]any{
+			"type":    "connected",
+			"subject": subject,
+			"stream":  streamName,
+		},
+		event: func(msg *nats.Msg) map[string]any {
+			return map[string]any{
+				"subject":   subject,
+				"data":      string(msg.Data),
+				"timestamp": pkg.GetCurrentTimestamp(),
+				"headers":   firstHeaderValues(msg.Header),
+			}
+		},
 	})
-
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error":   "Failed to subscribe to subject",
 			"details": err.Error(),
 		})
-		return
-	}
-
-	// Clean up subscription when done
-	defer func() {
-		close(done)
-		if subscription != nil {
-			subscription.Unsubscribe()
-		}
-		close(msgChan)
-	}()
-
-	// Send initial connection message
-	c.Writer.WriteString("data: " + string(pkg.MustToJSON(map[string]interface{}{
-		"type":      "connected",
-		"subject":   subject,
-		"stream":    streamName,
-		"timestamp": pkg.GetCurrentTimestamp(),
-	})) + "\n\n")
-	c.Writer.Flush()
-
-	// Handle client disconnect
-	clientGone := c.Writer.CloseNotify()
-
-	// Stream messages
-	for {
-		select {
-		case <-clientGone:
-			return
-		case message, ok := <-msgChan:
-			if !ok {
-				return
-			}
-			c.Writer.WriteString("data: " + string(message) + "\n\n")
-			if flusher, ok := c.Writer.(http.Flusher); ok {
-				flusher.Flush()
-			}
-		}
 	}
 }
 

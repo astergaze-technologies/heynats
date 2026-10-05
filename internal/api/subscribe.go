@@ -76,135 +76,37 @@ func (s *SubscribeAPI) subscribeToSubject(c *gin.Context) {
 		return
 	}
 
-	// Set up SSE headers
-	c.Header("Content-Type", "text/event-stream")
-	c.Header("Cache-Control", "no-cache")
-	c.Header("Connection", "keep-alive")
-	c.Header("Access-Control-Allow-Origin", "*")
-	c.Header("Access-Control-Allow-Headers", "Cache-Control")
-
-	// Create a channel for messages
-	msgChan := make(chan []byte, 100)
-	done := make(chan struct{})
-
-	// Message counter
-	messageCount := 0
-
-	// Create subscription handler for NATS messages
-	natsHandler := func(msg *nats.Msg) {
-		messageCount++
-
-		// Extract headers
-		headers := make(map[string]string)
-		if msg.Header != nil {
-			for key, values := range msg.Header {
-				if len(values) > 0 {
-					headers[key] = values[0]
-				}
+	err := streamSSE(c, sseSubscription{
+		conn:        conn,
+		subject:     subject,
+		queueGroup:  queueGroup,
+		queue:       subscriptionType == "queue",
+		maxMessages: maxMessages,
+		connected: map[string]any{
+			"type":              "connected",
+			"subject":           subject,
+			"queue_group":       queueGroup,
+			"subscription_type": subscriptionType,
+			"max_messages":      maxMessages,
+		},
+		event: func(msg *nats.Msg) map[string]any {
+			message := map[string]any{
+				"subject":   msg.Subject,
+				"data":      string(msg.Data),
+				"timestamp": pkg.GetCurrentTimestamp(),
+				"headers":   firstHeaderValues(msg.Header),
 			}
-		}
-
-		// Create message event
-		message := map[string]interface{}{
-			"subject":   msg.Subject,
-			"data":      string(msg.Data),
-			"timestamp": pkg.GetCurrentTimestamp(),
-			"headers":   headers,
-		}
-
-		// Add reply subject if available (for request-handler subscriptions)
-		if msg.Reply != "" {
-			message["reply"] = msg.Reply
-		}
-
-		messageJSON, err := pkg.ToJSON(message)
-		if err != nil {
-			return
-		}
-
-		select {
-		case msgChan <- messageJSON:
-		case <-done:
-			return
-		default:
-			// Channel is full, skip message
-		}
-
-		// Check if we've reached max messages limit
-		if maxMessages > 0 && messageCount >= maxMessages {
-			close(done)
-		}
-	}
-
-	// Subscribe to the subject
-	var subscription *nats.Subscription
-	var err error
-
-	if queueGroup != "" || subscriptionType == "queue" {
-		// For queue groups, use direct NATS connection
-		subscription, err = conn.Conn.QueueSubscribe(subject, queueGroup, natsHandler)
-	} else {
-		// For all other subscription types, use direct NATS subscription
-		subscription, err = conn.Conn.Subscribe(subject, natsHandler)
-	}
-
+			if msg.Reply != "" {
+				message["reply"] = msg.Reply
+			}
+			return message
+		},
+	})
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error":   "Failed to subscribe to subject",
 			"details": err.Error(),
 		})
-		return
-	}
-
-	// Clean up subscription when done
-	defer func() {
-		close(done)
-		if subscription != nil {
-			subscription.Unsubscribe()
-		}
-		close(msgChan)
-	}()
-
-	// Send initial connection message
-	initialMsg := map[string]interface{}{
-		"type":              "connected",
-		"subject":           subject,
-		"queue_group":       queueGroup,
-		"subscription_type": subscriptionType,
-		"max_messages":      maxMessages,
-		"timestamp":         pkg.GetCurrentTimestamp(),
-	}
-
-	c.Writer.WriteString("data: " + string(pkg.MustToJSON(initialMsg)) + "\n\n")
-	c.Writer.Flush()
-
-	// Stream messages
-	for {
-		select {
-		case message, ok := <-msgChan:
-			if !ok {
-				return
-			}
-			c.Writer.WriteString("data: " + string(message) + "\n\n")
-			c.Writer.Flush()
-
-		case <-done:
-			// Send completion message if max messages reached
-			if maxMessages > 0 {
-				completionMsg := map[string]interface{}{
-					"type":      "completed",
-					"subject":   subject,
-					"count":     messageCount,
-					"timestamp": pkg.GetCurrentTimestamp(),
-				}
-				c.Writer.WriteString("data: " + string(pkg.MustToJSON(completionMsg)) + "\n\n")
-				c.Writer.Flush()
-			}
-			return
-
-		case <-c.Request.Context().Done():
-			return
-		}
 	}
 }
 

@@ -365,31 +365,6 @@ func (nc *NATSCredential) IsConnected() bool {
 	return nc.Conn != nil && nc.Conn.IsConnected()
 }
 
-// SubscribeToSubject subscribes to a NATS subject and calls the callback for each message
-func (nc *NATSCredential) SubscribeToSubject(subject string, callback func(data []byte, headers map[string]string)) (*nats.Subscription, error) {
-	if nc.Conn == nil || !nc.Conn.IsConnected() {
-		return nil, fmt.Errorf("not connected to NATS server")
-	}
-
-	sub, err := nc.Conn.Subscribe(subject, func(msg *nats.Msg) {
-		headers := make(map[string]string)
-		if msg.Header != nil {
-			for key, values := range msg.Header {
-				if len(values) > 0 {
-					headers[key] = values[0]
-				}
-			}
-		}
-		callback(msg.Data, headers)
-	})
-
-	if err != nil {
-		return nil, fmt.Errorf("failed to subscribe to subject %s: %w", subject, err)
-	}
-
-	return sub, nil
-}
-
 // Utility functions for JSON handling and timestamps
 func ToJSON(v interface{}) ([]byte, error) {
 	return json.Marshal(v)
