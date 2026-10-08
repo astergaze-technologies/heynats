@@ -67,6 +67,18 @@ func (n *NatsConnectionStore) AddConnection(id string, conn *pkg.NATSCredential,
 	}
 }
 
+// GetConfig returns the credentials a connection was dialed with.
+func (n *NatsConnectionStore) GetConfig(id string) (*pkg.ConnectionRequest, bool) {
+	n.mutex.RLock()
+	defer n.mutex.RUnlock()
+
+	connInfo, exists := n.nastsConns[id]
+	if !exists {
+		return nil, false
+	}
+	return connInfo.Config, true
+}
+
 // GetConnection retrieves a connection and updates its activity timestamp
 func (n *NatsConnectionStore) GetConnection(id string) (*pkg.NATSCredential, bool) {
 	n.mutex.Lock()
