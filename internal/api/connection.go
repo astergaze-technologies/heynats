@@ -83,46 +83,49 @@ func (n *NatsConnectionStore) GetConnection(id string) (*pkg.NATSCredential, boo
 	return connInfo.Connection, true
 }
 
-// GetOrReconnect retrieves a connection, reconnecting if necessary
+// GetOrReconnect never does network I/O while holding the lock. nats.go
+// reconnects on its own, so only a closed connection is dialed again.
 func (n *NatsConnectionStore) GetOrReconnect(id string) (*pkg.NATSCredential, bool, error) {
+	n.mutex.Lock()
+	connInfo, exists := n.nastsConns[id]
+	if !exists {
+		n.mutex.Unlock()
+		return nil, false, nil
+	}
+	connInfo.LastActivity = time.Now()
+	old := connInfo.Connection
+	config := connInfo.Config
+	n.mutex.Unlock()
+
+	if old != nil && old.Conn != nil && !old.Conn.IsClosed() {
+		return old, true, nil
+	}
+
+	log.Printf("Reconnecting to NATS server for connection %s", id)
+	newConn := pkg.NewNATSCredential(config)
+	err := newConn.Connect()
+
 	n.mutex.Lock()
 	defer n.mutex.Unlock()
 
-	connInfo, exists := n.nastsConns[id]
-	if !exists {
-		return nil, false, nil
+	current, exists := n.nastsConns[id]
+	if !exists || current.Connection != old {
+		// Removed or already redialed by another request meanwhile.
+		closeConn(newConn)
+		if !exists {
+			return nil, false, nil
+		}
+		return current.Connection, true, nil
 	}
 
-	// Check if connection is still valid and healthy
-	if connInfo.Connection != nil && connInfo.Connection.IsHealthy() {
-		// Update last activity timestamp
-		connInfo.LastActivity = time.Now()
-		return connInfo.Connection, true, nil
-	}
-
-	// Connection is dead, attempt to reconnect
-	log.Printf("Reconnecting to NATS server for connection %s", id)
-
-	old := connInfo.Connection
-	newConn := pkg.NewNATSCredential(connInfo.Config)
-
-	if err := newConn.Connect(); err != nil {
-		closeConn(old)
-		delete(n.nastsConns, id)
-		return nil, false, err
-	}
-
-	if err := newConn.TestConnection(); err != nil {
-		newConn.Disconnect()
+	if err != nil {
 		closeConn(old)
 		delete(n.nastsConns, id)
 		return nil, false, err
 	}
 
 	closeConn(old)
-	connInfo.Connection = newConn
-	connInfo.LastActivity = time.Now()
-
+	current.Connection = newConn
 	log.Printf("Successfully reconnected to NATS server for connection %s", id)
 	return newConn, true, nil
 }
