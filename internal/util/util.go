@@ -8,26 +8,24 @@ import (
 	"github.com/nats-io/nats.go"
 )
 
-func versionComponents(version string) (major, minor, patch int, err error) {
-	var semVerRe = regexp.MustCompile(`\Av?([0-9]+)\.?([0-9]+)?\.?([0-9]+)?`)
+var semVerRe = regexp.MustCompile(`\Av?([0-9]+)(?:\.([0-9]+))?(?:\.([0-9]+))?`)
 
+// versionComponents parses "2.11.3"; missing minor/patch parts count as 0.
+func versionComponents(version string) (major, minor, patch int, err error) {
 	m := semVerRe.FindStringSubmatch(version)
 	if m == nil {
 		return 0, 0, 0, errors.New("invalid semver")
 	}
-	major, err = strconv.Atoi(m[1])
-	if err != nil {
-		return -1, -1, -1, err
+	parts := [3]int{}
+	for i, s := range m[1:] {
+		if s == "" {
+			continue
+		}
+		if parts[i], err = strconv.Atoi(s); err != nil {
+			return -1, -1, -1, err
+		}
 	}
-	minor, err = strconv.Atoi(m[2])
-	if err != nil {
-		return -1, -1, -1, err
-	}
-	patch, err = strconv.Atoi(m[3])
-	if err != nil {
-		return -1, -1, -1, err
-	}
-	return major, minor, patch, err
+	return parts[0], parts[1], parts[2], nil
 }
 
 func ServerMinVersion(nc *nats.Conn, major, minor, patch int) bool {

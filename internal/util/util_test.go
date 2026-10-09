@@ -31,19 +31,17 @@ func TestVersionComponents(t *testing.T) {
 		},
 		{
 			name:          "Valid semver with only major and minor",
-			version:       "2.9",
-			expectedMajor: 0,
-			expectedMinor: 0,
+			version:       "2.11",
+			expectedMajor: 2,
+			expectedMinor: 11,
 			expectedPatch: 0,
-			expectError:   true, // This will fail because m[2] is empty and strconv.Atoi("") fails
 		},
 		{
 			name:          "Valid semver with only major",
 			version:       "2",
-			expectedMajor: 0,
+			expectedMajor: 2,
 			expectedMinor: 0,
 			expectedPatch: 0,
-			expectError:   true, // This will fail because m[2] is empty and strconv.Atoi("") fails
 		},
 		{
 			name:          "Valid semver with leading zeros",
@@ -273,23 +271,6 @@ func BenchmarkServerMinVersion(b *testing.B) {
 
 // TestVersionComponentsEdgeCases tests edge cases and documents the current behavior
 func TestVersionComponentsEdgeCases(t *testing.T) {
-	t.Run("Behavior with incomplete versions", func(t *testing.T) {
-		// Note: The current implementation has a bug where it tries to parse empty strings
-		// when minor or patch versions are missing. This causes strconv.Atoi("") to fail.
-		// The regex captures groups but they can be empty.
-
-		// Test current behavior - these should ideally work but currently fail
-		_, _, _, err := versionComponents("2.9")
-		if err == nil {
-			t.Error("Expected error for version '2.9' due to current implementation bug")
-		}
-
-		_, _, _, err = versionComponents("2")
-		if err == nil {
-			t.Error("Expected error for version '2' due to current implementation bug")
-		}
-	})
-
 	t.Run("Regex pattern edge cases", func(t *testing.T) {
 		// Test versions that match the regex but have specific patterns
 		testCases := []struct {

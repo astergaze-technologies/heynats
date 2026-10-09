@@ -1,6 +1,7 @@
 package api
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"time"
@@ -18,7 +19,7 @@ type PublishAPI struct {
 
 type PublishRequest struct {
 	Subject string            `json:"subject" binding:"required"`
-	Data    string            `json:"data" binding:"required"`
+	Data    string            `json:"data"`
 	Headers map[string]string `json:"headers,omitempty"`
 }
 
@@ -28,7 +29,7 @@ type BatchPublishRequest struct {
 
 type PublishMessage struct {
 	Subject string            `json:"subject" binding:"required"`
-	Data    string            `json:"data" binding:"required"`
+	Data    string            `json:"data"`
 	Headers map[string]string `json:"headers,omitempty"`
 }
 
@@ -49,7 +50,7 @@ type BatchPublishResponse struct {
 
 type RequestReplyRequest struct {
 	Subject   string            `json:"subject" binding:"required"`
-	Data      string            `json:"data" binding:"required"`
+	Data      string            `json:"data"`
 	Headers   map[string]string `json:"headers,omitempty"`
 	Timeout   int               `json:"timeout,omitempty"` // in seconds, default 5
 	ReplySubj string            `json:"reply_subject,omitempty"`
@@ -242,22 +243,15 @@ func (p *PublishAPI) requestReply(c *gin.Context) {
 		}
 	}
 
-	// Set reply subject if provided
-	if req.ReplySubj != "" {
-		msg.Reply = req.ReplySubj
-	}
-
-	// Send request and wait for reply
-	reply, err := conn.Conn.RequestMsg(msg, timeout)
+	reply, err := sendRequest(conn.Conn, msg, req.ReplySubj, timeout)
 	if err != nil {
-		isTimeout := err == nats.ErrTimeout
-		c.JSON(http.StatusRequestTimeout, RequestReplyResponse{
+		c.JSON(requestErrorStatus(err), RequestReplyResponse{
 			Success:     false,
 			Subject:     req.Subject,
-			ReplySubj:   msg.Reply,
+			ReplySubj:   req.ReplySubj,
 			RequestData: req.Data,
 			Error:       fmt.Sprintf("Request failed: %v", err),
-			Timeout:     isTimeout,
+			Timeout:     errors.Is(err, nats.ErrTimeout),
 		})
 		return
 	}
@@ -269,6 +263,42 @@ func (p *PublishAPI) requestReply(c *gin.Context) {
 		RequestData: req.Data,
 		ReplyData:   string(reply.Data),
 	})
+}
+
+// sendRequest uses a custom reply subject when given, otherwise a NATS inbox.
+func sendRequest(nc *nats.Conn, msg *nats.Msg, replySubj string, timeout time.Duration) (*nats.Msg, error) {
+	if replySubj == "" {
+		return nc.RequestMsg(msg, timeout)
+	}
+	sub, err := nc.SubscribeSync(replySubj)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = sub.Unsubscribe() }()
+
+	msg.Reply = replySubj
+	if err := nc.PublishMsg(msg); err != nil {
+		return nil, err
+	}
+	reply, err := sub.NextMsg(timeout)
+	if err != nil {
+		return nil, err
+	}
+	if reply.Header.Get("Status") == "503" && len(reply.Data) == 0 {
+		return nil, nats.ErrNoResponders
+	}
+	return reply, nil
+}
+
+func requestErrorStatus(err error) int {
+	switch {
+	case errors.Is(err, nats.ErrTimeout):
+		return http.StatusGatewayTimeout
+	case errors.Is(err, nats.ErrNoResponders):
+		return http.StatusServiceUnavailable
+	default:
+		return http.StatusBadGateway
+	}
 }
 
 func (p *PublishAPI) getSubjects(c *gin.Context) {

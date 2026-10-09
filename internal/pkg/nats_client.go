@@ -235,12 +235,11 @@ func (nc *NATSCredential) GetAccountInfo() (*AccountInfo, error) {
 		}, nil
 	}
 
-	var accountData map[string]interface{}
-	if err := json.Unmarshal(resp.Data, &accountData); err == nil {
+	if data, ok := accountPingData(resp.Data); ok {
 		return &AccountInfo{
 			AccountInformation: nc.infoAction(),
-			ConnectionLimits:   accountData["data"].(map[string]interface{}),
-			Stats:              accountData["data"].(map[string]interface{}),
+			ConnectionLimits:   data,
+			Stats:              data,
 		}, nil
 	}
 
@@ -259,6 +258,22 @@ func (nc *NATSCredential) GetAccountInfo() (*AccountInfo, error) {
 			"reconnects": stats.Reconnects,
 		},
 	}, nil
+}
+
+// accountPingData returns the "data" object of a $SYS reply; error replies have none.
+func accountPingData(raw []byte) (map[string]interface{}, bool) {
+	var reply map[string]interface{}
+	if err := json.Unmarshal(raw, &reply); err != nil {
+		return nil, false
+	}
+	data, ok := reply["data"].(map[string]interface{})
+	return data, ok
+}
+
+// neverExpires reports a decoded JSON expiry of 0, which decodes as float64.
+func neverExpires(expires interface{}) bool {
+	n, ok := expires.(float64)
+	return ok && n == 0
 }
 
 func (nc *NATSCredential) TestConnection() error {
@@ -322,7 +337,7 @@ func (nc *NATSCredential) infoAction() map[string]any {
 		"server_version":   nc.Conn.ConnectedServerVersion(),
 		"server_name":      nc.Conn.ConnectedServerName(),
 	}
-	if expires == 0 {
+	if neverExpires(expires) {
 		accountInfo["expires"] = "never"
 	}
 	if lip != "" && !strings.HasPrefix(lip, ip.String()) {

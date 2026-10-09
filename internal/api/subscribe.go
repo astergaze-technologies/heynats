@@ -137,7 +137,7 @@ func (s *SubscribeAPI) getSubjects(c *gin.Context) {
 // ReplyRequest represents the request body for sending a reply
 type ReplyRequest struct {
 	ReplySubject string            `json:"reply_subject" binding:"required"`
-	Data         string            `json:"data" binding:"required"`
+	Data         string            `json:"data"`
 	Headers      map[string]string `json:"headers,omitempty"`
 }
 
