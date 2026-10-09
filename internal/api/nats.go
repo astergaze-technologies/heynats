@@ -31,58 +31,47 @@ func NewHeyNats(
 func (e *HeyNats) RegisterRoutes() {
 	// NATS connection endpoints
 	api := e.router
-	api.POST("/connect", e.middleware.Handle(), func(c *gin.Context) {
+	api.POST("/connect", func(c *gin.Context) {
 		var req pkg.ConnectionRequest
 		if err := c.ShouldBindJSON(&req); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
 
-		// Check if there's already an existing connection from cookie
-		existingConn, hasConnection := c.Get(NatsConnectionKey)
-		var natsConn *pkg.NATSCredential
-		var connectionID string
-
-		if hasConnection {
-			// Use existing connection
-			natsConn = existingConn.(*pkg.NATSCredential)
-			if cID, exists := c.Get(ConnectionIDKey); exists {
-				if cIDStr, ok := cID.(string); ok {
-					connectionID = cIDStr
-					log.Println("Using existing connection for user:", connectionID)
-					// Update activity for existing connection
-					e.conns.UpdateActivity(connectionID)
-				}
-			}
-		} else {
-			// Create new connection
-			connectionID = uuid.New().String()
-			natsConn = pkg.NewNATSCredential(&req)
-
-			// Attempt to connect
-			if err := natsConn.Connect(); err != nil {
-				c.JSON(http.StatusUnauthorized, gin.H{
-					"error":   "Failed to connect to NATS server",
-					"details": err.Error(),
-				})
-				return
-			}
-
-			// Test the connection
-			if err := natsConn.TestConnection(); err != nil {
-				natsConn.Disconnect()
-				c.JSON(http.StatusUnauthorized, gin.H{
-					"error":   "Connection test failed",
-					"details": err.Error(),
-				})
-				return
-			}
-
-			// Store the connection and set HTTP-only cookie
-			e.conns.AddConnection(connectionID, natsConn, &req)
-
-			setSessionCookie(c, connectionID, 3600*24)
+		oldID, _ := c.Cookie(ConnectionIDKey)
+		if config, ok := e.conns.GetConfig(oldID); ok && *config == req {
+			log.Println("Using existing connection for user:", oldID)
+			e.conns.UpdateActivity(oldID)
+			c.JSON(http.StatusOK, gin.H{
+				"message":   "Successfully connected to NATS server",
+				"connected": true,
+			})
+			return
 		}
+
+		natsConn := pkg.NewNATSCredential(&req)
+		if err := natsConn.Connect(); err != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"error":   "Failed to connect to NATS server",
+				"details": err.Error(),
+			})
+			return
+		}
+
+		if err := natsConn.TestConnection(); err != nil {
+			natsConn.Disconnect()
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"error":   "Connection test failed",
+				"details": err.Error(),
+			})
+			return
+		}
+
+		e.conns.RemoveConnection(oldID)
+		connectionID := uuid.New().String()
+		e.conns.AddConnection(connectionID, natsConn, &req)
+		setSessionCookie(c, connectionID, 3600*24)
+
 		c.JSON(http.StatusOK, gin.H{
 			"message":   "Successfully connected to NATS server",
 			"connected": true,
