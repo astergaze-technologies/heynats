@@ -15,6 +15,9 @@ type Router struct {
 // NewRouter serves the SPA from dist; unknown non-API paths fall back to index.html.
 func NewRouter(dist fs.FS) *Router {
 	r := gin.Default()
+	// KV keys may contain "/"; the client sends it as %2F.
+	r.UseRawPath = true
+	r.UnescapePathValues = true
 	fileServer := http.FileServer(http.FS(dist))
 
 	r.NoRoute(func(c *gin.Context) {

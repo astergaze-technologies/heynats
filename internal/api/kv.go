@@ -221,9 +221,9 @@ func (e *KVAPI) GetBucketKeys(c *gin.Context) {
 		return
 	}
 
-	// Parse pagination query params
+	// No pageSize returns every key; real paging comes with the KV workbench.
 	page := 0
-	pageSize := 20
+	pageSize := 0
 	if p := c.Query("page"); p != "" {
 		if pi, err := strconv.Atoi(p); err == nil && pi >= 0 {
 			page = pi
@@ -244,16 +244,12 @@ func (e *KVAPI) GetBucketKeys(c *gin.Context) {
 		return
 	}
 
-	// Apply pagination
-	start := page * pageSize
-	end := start + pageSize
-	if start >= len(entries) {
-		start = len(entries)
+	pagedEntries := entries
+	if pageSize > 0 {
+		start := min(page*pageSize, len(entries))
+		end := min(start+pageSize, len(entries))
+		pagedEntries = entries[start:end]
 	}
-	if end > len(entries) {
-		end = len(entries)
-	}
-	pagedEntries := entries[start:end]
 
 	c.JSON(http.StatusOK, gin.H{
 		"bucket":   bucket,
@@ -300,16 +296,13 @@ func (e *KVAPI) PutKeyValue(c *gin.Context) {
 		return
 	}
 
-	var actual string
-	err := json.Unmarshal(req.Value, &actual)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error":   "Data Unmarshal error",
-			"details": err.Error(),
-		})
-		return
+	// Strings are stored as-is; objects, numbers etc. as their raw JSON.
+	value := []byte(req.Value)
+	var str string
+	if json.Unmarshal(req.Value, &str) == nil {
+		value = []byte(str)
 	}
-	rev, err := manager.PutValue(bucket, key, []byte(actual))
+	rev, err := manager.PutValue(bucket, key, value)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error":   "Failed to put value",
