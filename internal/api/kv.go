@@ -2,6 +2,8 @@ package api
 
 import (
 	"encoding/json"
+	"errors"
+	"fmt"
 	"net/http"
 	"strconv"
 	"time"
@@ -137,6 +139,13 @@ func (e *KVAPI) CreateBucket(c *gin.Context) {
 		return
 	}
 
+	if req.History < 0 || req.History > jetstream.KeyValueMaxHistory {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": fmt.Sprintf("history must be between 0 and %d", jetstream.KeyValueMaxHistory),
+		})
+		return
+	}
+
 	kvConfig := jetstream.KeyValueConfig{
 		Bucket:  req.Bucket,
 		History: uint8(req.History),
@@ -157,7 +166,11 @@ func (e *KVAPI) CreateBucket(c *gin.Context) {
 
 	err := manager.CreateBucket(kvConfig)
 	if err != nil {
-		c.JSON(http.StatusConflict, gin.H{
+		status := http.StatusInternalServerError
+		if errors.Is(err, jetstream.ErrBucketExists) {
+			status = http.StatusConflict
+		}
+		c.JSON(status, gin.H{
 			"error":   "Failed to create bucket",
 			"details": err.Error(),
 		})

@@ -123,8 +123,8 @@ func (e *StreamAPI) ListConsumers(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"streams": consumers,
-		"total":   len(consumers),
+		"consumers": consumers,
+		"total":     len(consumers),
 	})
 }
 
