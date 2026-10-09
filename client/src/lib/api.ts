@@ -108,14 +108,15 @@ async function apiRequest<T>(
   options?: RequestInit
 ): Promise<T> {
   const response = await fetch(`${API_BASE}${endpoint}`, {
+    ...options,
     headers: {
       'Content-Type': 'application/json',
       ...options?.headers,
     },
-    ...options,
   });
 
-  const data = await response.json();
+  // Proxies and gateways can answer with HTML, e.g. a 502 page.
+  const data = await response.json().catch(() => ({}));
 
   if (!response.ok) {
     throw new ApiError(
@@ -237,7 +238,7 @@ export const streamsApi = {
 
   // Get stream details
   getStream: (streamName: string): Promise<Stream> =>
-    apiRequest(`/nats/streams/${streamName}`),
+    apiRequest(`/nats/streams/${encodeURIComponent(streamName)}`),
 
   // Get stream messages with pagination and search
   getStreamMessages: (
@@ -266,7 +267,7 @@ export const streamsApi = {
 
   // Delete a stream
   deleteStream: (streamName: string): Promise<{ message: string }> =>
-    apiRequest(`/nats/streams/${streamName}`, {
+    apiRequest(`/nats/streams/${encodeURIComponent(streamName)}`, {
       method: 'DELETE',
     }),
 };
@@ -319,41 +320,49 @@ export const kvApi = {
 
   // Create a new KV bucket
   createBucket: (config: CreateBucketRequest): Promise<CreateBucketResponse> =>
-    apiRequest('/nats/kv/bucket', {
+    apiRequest('/nats/kv/buckets', {
       method: 'POST',
       body: JSON.stringify(config),
     }),
 
   // Get bucket details (placeholder - will need backend implementation)
   getBucket: (bucketName: string): Promise<KVBucket> =>
-    apiRequest(`/nats/kv/buckets/${bucketName}`),
+    apiRequest(`/nats/kv/buckets/${encodeURIComponent(bucketName)}`),
 
   // Delete a bucket (placeholder - will need backend implementation)
   deleteBucket: (bucketName: string): Promise<{ message: string }> =>
-    apiRequest(`/nats/kv/buckets/${bucketName}`, {
+    apiRequest(`/nats/kv/buckets/${encodeURIComponent(bucketName)}`, {
       method: 'DELETE',
     }),
 
   // Get all keys in a bucket (placeholder - will need backend implementation)
   getBucketKeys: (bucketName: string): Promise<KVEntriesResponse> =>
-    apiRequest(`/nats/kv/buckets/${bucketName}/keys`),
+    apiRequest(`/nats/kv/buckets/${encodeURIComponent(bucketName)}/keys`),
 
   // Get a specific key value (placeholder - will need backend implementation)
   getKey: (bucketName: string, key: string): Promise<KVEntry> =>
-    apiRequest(`/nats/kv/buckets/${bucketName}/keys/${key}`),
+    apiRequest(
+      `/nats/kv/buckets/${encodeURIComponent(bucketName)}/keys/${encodeURIComponent(key)}`
+    ),
 
   // Set a key value (placeholder - will need backend implementation)
   setKey: (bucketName: string, key: string, value: string): Promise<KVEntry> =>
-    apiRequest(`/nats/kv/buckets/${bucketName}/keys/${key}`, {
-      method: 'PUT',
-      body: JSON.stringify({ value }),
-    }),
+    apiRequest(
+      `/nats/kv/buckets/${encodeURIComponent(bucketName)}/keys/${encodeURIComponent(key)}`,
+      {
+        method: 'PUT',
+        body: JSON.stringify({ value }),
+      }
+    ),
 
   // Delete a key (placeholder - will need backend implementation)
   deleteKey: (bucketName: string, key: string): Promise<{ message: string }> =>
-    apiRequest(`/nats/kv/buckets/${bucketName}/keys/${key}`, {
-      method: 'DELETE',
-    }),
+    apiRequest(
+      `/nats/kv/buckets/${encodeURIComponent(bucketName)}/keys/${encodeURIComponent(key)}`,
+      {
+        method: 'DELETE',
+      }
+    ),
 };
 
 // Publish API interfaces
