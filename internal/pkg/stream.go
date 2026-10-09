@@ -51,6 +51,10 @@ func (nc *NATSCredential) ListConsumers(stream string) ([]*nats.ConsumerInfo, er
 		return nil, fmt.Errorf("not connected to NATS server")
 	}
 
+	if nc.JSConn == nil {
+		return nil, fmt.Errorf("not connected to JetStream")
+	}
+
 	js := *nc.JSConn
 
 	consumers := js.Consumers(stream)
@@ -95,6 +99,11 @@ type StreamConfig struct {
 	MaxBytes     int64    `json:"max_bytes"`
 	MaxAge       int64    `json:"max_age"` // nanoseconds
 	MaxConsumers int      `json:"max_consumers"`
+
+	MaxMsgsPerSubject int64  `json:"max_msgs_per_subject"`
+	MaxMsgSize        int32  `json:"max_msg_size"`
+	DuplicateWindow   int64  `json:"duplicate_window"` // nanoseconds
+	Compression       string `json:"compression"`      // "none" or "s2"
 }
 
 func (nc *NATSCredential) CreateStream(config *StreamConfig) (*nats.StreamInfo, error) {
@@ -114,6 +123,16 @@ func (nc *NATSCredential) CreateStream(config *StreamConfig) (*nats.StreamInfo, 
 		Subjects:    config.Subjects,
 		Replicas:    config.NumReplicas,
 		AllowDirect: config.AllowDirect,
+		AllowMsgTTL: config.AllowMsgTTL,
+	}
+
+	switch config.Compression {
+	case "", "none":
+		streamConfig.Compression = nats.NoCompression
+	case "s2":
+		streamConfig.Compression = nats.S2Compression
+	default:
+		return nil, fmt.Errorf("unknown compression %q", config.Compression)
 	}
 
 	// Set storage type
@@ -160,6 +179,15 @@ func (nc *NATSCredential) CreateStream(config *StreamConfig) (*nats.StreamInfo, 
 	}
 	if config.MaxConsumers > 0 {
 		streamConfig.MaxConsumers = config.MaxConsumers
+	}
+	if config.MaxMsgsPerSubject > 0 {
+		streamConfig.MaxMsgsPerSubject = config.MaxMsgsPerSubject
+	}
+	if config.MaxMsgSize > 0 {
+		streamConfig.MaxMsgSize = config.MaxMsgSize
+	}
+	if config.DuplicateWindow > 0 {
+		streamConfig.Duplicates = time.Duration(config.DuplicateWindow)
 	}
 
 	// Create the stream
@@ -334,7 +362,7 @@ func (nc *NATSCredential) GetStreamMessagesWithSearch(streamName string, offset 
 
 	// If no search term, use regular pagination
 	if search == "" {
-		return nc.GetStreamMessages(streamName, offset*limit, limit)
+		return nc.GetStreamMessages(streamName, offset, limit)
 	}
 
 	// Lazy loading: fetch messages in chunks while filtering
@@ -343,7 +371,7 @@ func (nc *NATSCredential) GetStreamMessagesWithSearch(streamName string, offset 
 	lastSeq := streamInfo.State.LastSeq
 
 	matchedCount := 0
-	pageStartIdx := offset * limit
+	pageStartIdx := offset
 	pageEndIdx := pageStartIdx + limit
 	currentMessageIdx := 0
 	chunkSize := 100 // Fetch in chunks of 100 to avoid loading entire stream

@@ -32,6 +32,10 @@ export function CreateStreamModal({
     max_bytes: '-1',
     max_age: '-1',
     max_consumers: '-1',
+    max_msgs_per_subject: '-1',
+    max_msg_size: '-1',
+    duplicate_window: '',
+    compression: 'none' as 'none' | 's2',
     num_replicas: 1,
     discard: 'old' as 'old' | 'new',
     allow_direct: true,
@@ -84,6 +88,7 @@ export function CreateStreamModal({
       num_replicas: formData.num_replicas,
       allow_direct: formData.allow_direct,
       allow_msg_ttl: formData.allow_msg_ttl,
+      compression: formData.compression,
     };
 
     // Add limits if specified
@@ -98,6 +103,17 @@ export function CreateStreamModal({
     }
     if (formData.max_consumers) {
       config.max_consumers = Number.parseInt(formData.max_consumers) || -1;
+    }
+    if (formData.max_msgs_per_subject) {
+      config.max_msgs_per_subject =
+        Number.parseInt(formData.max_msgs_per_subject, 10) || -1;
+    }
+    if (formData.max_msg_size) {
+      config.max_msg_size = Number.parseInt(formData.max_msg_size, 10) || -1;
+    }
+    if (formData.duplicate_window) {
+      config.duplicate_window =
+        Number.parseInt(formData.duplicate_window, 10) * 1_000_000_000 || 0;
     }
 
     try {
@@ -119,6 +135,10 @@ export function CreateStreamModal({
       max_bytes: '',
       max_age: '',
       max_consumers: '',
+      max_msgs_per_subject: '',
+      max_msg_size: '',
+      duplicate_window: '',
+      compression: 'none',
       num_replicas: 1,
       discard: 'old',
       allow_direct: true,
@@ -337,6 +357,49 @@ export function CreateStreamModal({
                   disabled={isLoading}
                 />
               </div>
+              <div>
+                <label
+                  htmlFor="stream-max-msgs-per-subject"
+                  className="block text-sm font-medium text-foreground/80 mb-2"
+                >
+                  Max Messages per Subject
+                </label>
+                <input
+                  id="stream-max-msgs-per-subject"
+                  type="number"
+                  value={formData.max_msgs_per_subject}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      max_msgs_per_subject: e.target.value,
+                    })
+                  }
+                  className="w-full px-3 py-2 border border-border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                  placeholder="No limit"
+                  min="-1"
+                  disabled={isLoading}
+                />
+              </div>
+              <div>
+                <label
+                  htmlFor="stream-max-msg-size"
+                  className="block text-sm font-medium text-foreground/80 mb-2"
+                >
+                  Max Message Size (bytes)
+                </label>
+                <input
+                  id="stream-max-msg-size"
+                  type="number"
+                  value={formData.max_msg_size}
+                  onChange={(e) =>
+                    setFormData({ ...formData, max_msg_size: e.target.value })
+                  }
+                  className="w-full px-3 py-2 border border-border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                  placeholder="No limit"
+                  min="-1"
+                  disabled={isLoading}
+                />
+              </div>
             </div>
           </div>
 
@@ -392,6 +455,53 @@ export function CreateStreamModal({
                 >
                   <option value="old">Old</option>
                   <option value="new">New</option>
+                </select>
+              </div>
+              <div>
+                <label
+                  htmlFor="stream-duplicate-window"
+                  className="block text-sm font-medium text-foreground/80 mb-2"
+                >
+                  Duplicate Window (seconds)
+                </label>
+                <input
+                  id="stream-duplicate-window"
+                  type="number"
+                  value={formData.duplicate_window}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      duplicate_window: e.target.value,
+                    })
+                  }
+                  className="w-full px-3 py-2 border border-border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                  placeholder="Server default (2 min)"
+                  min="0"
+                  disabled={isLoading}
+                />
+              </div>
+
+              <div>
+                <label
+                  htmlFor="stream-compression"
+                  className="block text-sm font-medium text-foreground/80 mb-2"
+                >
+                  Compression
+                </label>
+                <select
+                  id="stream-compression"
+                  value={formData.compression}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      compression: e.target.value as 'none' | 's2',
+                    })
+                  }
+                  className="w-full px-3 py-2 border border-border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                  disabled={isLoading}
+                >
+                  <option value="none">None</option>
+                  <option value="s2">S2</option>
                 </select>
               </div>
             </div>
