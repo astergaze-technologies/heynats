@@ -38,6 +38,7 @@ Step-by-step plan, one PR per step: [PHASE-0-FOUNDATION.md](PHASE-0-FOUNDATION.m
 ---
 
 ## Phase 1: Observe & Debug
+Step-by-step plan, one PR per step: [PHASE-1-OBSERVE-DEBUG.md](PHASE-1-OBSERVE-DEBUG.md).
 
 | Feature | Problem it solves | How it improves HeyNATS |
 |---|---|---|
