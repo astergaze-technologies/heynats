@@ -54,6 +54,10 @@ pre-push:
       glob: "client/**/*.{ts,tsx}"
       run: cd client && npx tsc --noEmit
     
+    frontend-test:
+      glob: "client/**/*.{ts,tsx}"
+      run: cd client && npm test
+
     # Frontend build check
     frontend-build:
       glob: "client/**/*.{js,ts,jsx,tsx,json,html,css}"

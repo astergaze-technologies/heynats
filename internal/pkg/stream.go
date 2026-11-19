@@ -9,7 +9,7 @@ import (
 )
 
 type StreamMessage struct {
-	Sequence  uint64            `json:"sequence"`
+	Sequence  uint64            `json:"sequence,string"`
 	Subject   string            `json:"subject"`
 	Data      string            `json:"data"`
 	Headers   map[string]string `json:"headers,omitempty"`

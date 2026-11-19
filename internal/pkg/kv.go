@@ -136,7 +136,7 @@ type KVEntry struct {
 	Key      string `json:"key"`
 	Value    string `json:"value"`
 	Created  string `json:"created"`
-	Revision uint64 `json:"revision"`
+	Revision uint64 `json:"revision,string"`
 }
 
 // GetBucketKeys returns all keys in a bucket
