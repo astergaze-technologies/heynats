@@ -1,24 +1,6 @@
 import { ChevronDown, ChevronRight, Copy } from 'lucide-react';
 import { useState } from 'react';
-
-// Utility functions
-export function formatJSON(data: string): string {
-  try {
-    const parsed = JSON.parse(data);
-    return JSON.stringify(parsed, null, 2);
-  } catch {
-    return data;
-  }
-}
-
-export function isValidJSON(data: string): boolean {
-  try {
-    JSON.parse(data);
-    return true;
-  } catch {
-    return false;
-  }
-}
+import { isLosslessNumber } from '@/lib/json';
 
 // JSON Recursive Node Component
 interface JsonNodeProps {
@@ -73,11 +55,11 @@ function JsonNode({
     );
   }
 
-  if (typeof value === 'number') {
+  if (typeof value === 'number' || isLosslessNumber(value)) {
     return (
       <div className="font-mono text-sm leading-6">
         {renderKey()}
-        <span className="text-primary">{value}</span>
+        <span className="text-primary">{String(value)}</span>
         {renderComma()}
       </div>
     );

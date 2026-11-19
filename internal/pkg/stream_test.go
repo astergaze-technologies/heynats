@@ -1,6 +1,9 @@
 package pkg
 
 import (
+	"encoding/json"
+	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -81,5 +84,38 @@ func TestListConsumersWithoutJetStream(t *testing.T) {
 	cred.JSConn = nil
 	if _, err := cred.ListConsumers("S"); err == nil {
 		t.Error("expected error without JetStream")
+	}
+}
+
+func TestSequencesBeyondFloat64Precision(t *testing.T) {
+	cred := newStreamCred(t)
+	js := *cred.JSConn
+	const first = uint64(1)<<60 + 1
+	if _, err := js.AddStream(&nats.StreamConfig{Name: "BIG", Subjects: []string{"big"}, FirstSeq: first}); err != nil {
+		t.Fatal(err)
+	}
+	for i := 0; i < 3; i++ {
+		if _, err := js.Publish("big", []byte(`{"id":323439282914070533}`)); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	resp, err := cred.GetStreamMessages("BIG", 0, 10)
+	if err != nil {
+		t.Fatal(err)
+	}
+	b, _ := json.Marshal(resp)
+	for i := uint64(0); i < 3; i++ {
+		if want := `"sequence":"` + strconv.FormatUint(first+i, 10) + `"`; !strings.Contains(string(b), want) {
+			t.Errorf("missing %s in %s", want, b)
+		}
+	}
+	if !strings.Contains(string(b), `323439282914070533`) {
+		t.Errorf("payload must pass through untouched: %s", b)
+	}
+
+	entry, _ := json.Marshal(KVEntry{Revision: first})
+	if !strings.Contains(string(entry), `"revision":"1152921504606846977"`) {
+		t.Errorf("kv revision = %s", entry)
 	}
 }

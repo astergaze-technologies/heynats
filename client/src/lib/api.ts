@@ -215,7 +215,7 @@ export interface StreamsResponse {
 
 // Stream Message interfaces
 export interface StreamMessage {
-  sequence: number;
+  sequence: string;
   subject: string;
   data: string;
   headers?: Record<string, string>;
@@ -302,7 +302,7 @@ export interface KVEntry {
   key: string;
   value: string;
   created: string;
-  revision: number;
+  revision: string;
 }
 
 export interface KVEntriesResponse {

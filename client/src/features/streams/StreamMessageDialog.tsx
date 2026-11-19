@@ -1,10 +1,5 @@
 import { useState } from 'react';
-import {
-  CodeDisplay,
-  formatJSON,
-  isValidJSON,
-  JsonViewer,
-} from '@/components/JsonViewer';
+import { CodeDisplay, JsonViewer } from '@/components/JsonViewer';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -13,6 +8,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import type { StreamMessage } from '@/lib/api';
+import { formatJSON, isValidJSON, parseJSON } from '@/lib/json';
 import { formatTimestamp } from '@/lib/utils';
 
 // Message Detail Modal
@@ -135,7 +131,7 @@ export function StreamMessageDialog({
             <div id="detail-data">
               {viewMode === 'formatted' && isMessageJSON ? (
                 <div className="p-4 bg-muted rounded border border-border overflow-auto max-h-96">
-                  <JsonViewer data={JSON.parse(message.data)} />
+                  <JsonViewer data={parseJSON(message.data)} />
                 </div>
               ) : (
                 <CodeDisplay
