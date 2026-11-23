@@ -13,6 +13,7 @@ make dev-full         # ./dev.sh: Go server :5000 + Vite dev :5173 (proxies /api
 make build            # client + linux/amd64 server binary -> bin/server
 air                   # Go hot reload (runs under dlv on :2345, see .air.toml)
 docker-compose up -d  # app + NATS 2.12 (JetStream, nats.conf)
+make cluster-up       # 3-node NATS cluster n1-n3 (4222-4224, monitor 8222-8224); same host ports as docker-compose, run one
 
 go test ./...                                     # only tests: internal/util
 go test ./internal/util -run TestVersionComparison

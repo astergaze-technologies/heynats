@@ -1,0 +1,20 @@
+# 3-node dev cluster: same accounts/users as nats.conf; flags override name and add routes.
+# Uses the same host ports as docker-compose.yml, so run one or the other.
+x-node: &node
+  image: nats:2.12.0
+  volumes:
+    - ./nats.conf:/app/nats.conf:ro
+
+services:
+  n1:
+    <<: *node
+    command: -c /app/nats.conf --name n1 --cluster_name heynats --cluster nats://0.0.0.0:6222 --routes nats://n1:6222,nats://n2:6222,nats://n3:6222
+    ports: ["4222:4222", "8222:8222"]
+  n2:
+    <<: *node
+    command: -c /app/nats.conf --name n2 --cluster_name heynats --cluster nats://0.0.0.0:6222 --routes nats://n1:6222,nats://n2:6222,nats://n3:6222
+    ports: ["4223:4222", "8223:8222"]
+  n3:
+    <<: *node
+    command: -c /app/nats.conf --name n3 --cluster_name heynats --cluster nats://0.0.0.0:6222 --routes nats://n1:6222,nats://n2:6222,nats://n3:6222
+    ports: ["4224:4222", "8224:8222"]
