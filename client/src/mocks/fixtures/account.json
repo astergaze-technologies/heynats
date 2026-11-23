@@ -1,0 +1,37 @@
+{
+  "account_information": {
+    "account": "APP",
+    "client_id": 104,
+    "client_ip": "192.168.97.1",
+    "connected_addr": "127.0.0.1:4222",
+    "connected_url": "nats://localhost:4222",
+    "expires": null,
+    "header_supported": true,
+    "local_ip": "127.0.0.1:54088",
+    "max_payload": "1.0 MiB",
+    "permissions": null,
+    "rtt": "130.958µs",
+    "server_id": "NC2COS6MQUP46X7BJDIF3TKHUUA66RXUGTQO2IIVVOYHPHKIY5DY2A5L",
+    "server_name": "n1",
+    "server_version": "2.12.0",
+    "user": null
+  },
+  "connection_limits": {
+    "connections": [],
+    "limit": 1024,
+    "now": "2026-11-23T11:31:24.309098047Z",
+    "num_connections": 0,
+    "offset": 0,
+    "server_id": "NBDUSLYLJACP36PJ6DBAFNAM4H4OIGGQPCGCW2DP4WSI2ODGOYS5LON6",
+    "total": 0
+  },
+  "stats": {
+    "connections": [],
+    "limit": 1024,
+    "now": "2026-11-23T11:31:24.309098047Z",
+    "num_connections": 0,
+    "offset": 0,
+    "server_id": "NBDUSLYLJACP36PJ6DBAFNAM4H4OIGGQPCGCW2DP4WSI2ODGOYS5LON6",
+    "total": 0
+  }
+}

@@ -21,11 +21,12 @@ go vet ./... && golangci-lint run ./...
 
 cd client && pnpm lint        # biome@2.2.2 check (lint:fix / format to write)
 cd client && pnpm typecheck   # tsc --noEmit
-cd client && pnpm test        # node --test unit tests (src/**/*.test.ts)
+cd client && pnpm test        # vitest + Testing Library; MSW serves /api from src/mocks/fixtures
+cd client && pnpm dev:mock    # Vite with MSW, no Go server needed
 cd client && pnpm build       # tsc -b && vite build
 ```
 
-README mentions `make lint`, which does not exist. Frontend unit tests use Node's built-in runner and are excluded from `tsc`.
+README mentions `make lint`, which does not exist. Frontend tests (`*.test.ts(x)`) and `src/mocks/setup.ts` are excluded from `tsc`. Refresh fixtures with `scripts/capture-fixtures.sh` (app on :5000, `NATS_PASS` set).
 
 The SPA is embedded into the Go binary (`//go:embed all:client/dist` in `main.go`), so the client must be built before `go build`/`go run` or the server serves a stale/empty UI. `client/dist/.gitkeep` is tracked (re-copied from `client/public/` on each Vite build) so Go compiles on a fresh clone.
 
