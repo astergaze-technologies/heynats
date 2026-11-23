@@ -1,6 +1,6 @@
 # Makefile for React + Gin project
 
-.PHONY: build-client build-server build run dev dev-full clean install help
+.PHONY: build-client build-server build run dev dev-full cluster-up cluster-down dev-cluster clean install help
 
 # Default target
 help:
@@ -12,6 +12,9 @@ help:
 	@echo "  make run           - Build client and run Go server (production)"
 	@echo "  make dev           - Run client in development mode only"
 	@echo "  make dev-full      - Run both client and server in development mode"
+	@echo "  make cluster-up    - Start 3-node NATS cluster (ports 4222-4224, monitor 8222-8224)"
+	@echo "  make cluster-down  - Stop the 3-node NATS cluster"
+	@echo "  make dev-cluster   - Start the cluster, then dev-full"
 	@echo "  make clean         - Clean build artifacts"
 
 # Install dependencies
@@ -50,6 +53,14 @@ dev:
 dev-full:
 	@echo "Starting full development environment..."
 	./dev.sh
+
+cluster-up:
+	docker compose -f docker-compose.cluster.yml up -d
+
+cluster-down:
+	docker compose -f docker-compose.cluster.yml down
+
+dev-cluster: cluster-up dev-full
 
 # Clean build artifacts
 clean:
