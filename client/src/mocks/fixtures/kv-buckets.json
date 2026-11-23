@@ -1,0 +1,17 @@
+{
+  "buckets": [
+    {
+      "bucket": "config",
+      "values": 2,
+      "history": 1,
+      "ttl": "",
+      "backing_store": "JetStream",
+      "bytes": 107,
+      "is_compressed": false,
+      "limit_marker_ttl": 0,
+      "metadata": {
+        "_nats.req.level": "0"
+      }
+    }
+  ]
+}

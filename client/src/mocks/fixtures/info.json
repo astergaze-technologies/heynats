@@ -1,0 +1,17 @@
+{
+  "server_info": {
+    "connected_url": "nats://localhost:4222",
+    "last_error": null,
+    "server_id": "NC2COS6MQUP46X7BJDIF3TKHUUA66RXUGTQO2IIVVOYHPHKIY5DY2A5L",
+    "server_name": "n1"
+  },
+  "stats": {
+    "InMsgs": 0,
+    "OutMsgs": 0,
+    "InBytes": 0,
+    "OutBytes": 0,
+    "Reconnects": 0
+  },
+  "is_connected": true,
+  "connected_url": "nats://localhost:4222"
+}

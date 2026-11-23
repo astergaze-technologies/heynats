@@ -10,7 +10,8 @@
     "lint:fix": "npx @biomejs/biome@2.5.14 check --write .",
     "format": "npx @biomejs/biome@2.5.14 format --write .",
     "typecheck": "tsc --noEmit",
-    "test": "node --test \"src/**/*.test.ts\"",
+    "test": "vitest run",
+    "dev:mock": "vite --mode mock",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -34,12 +35,17 @@
     "tailwindcss-animate": "^1.0.7"
   },
   "devDependencies": {
+    "@testing-library/dom": "^10.4.2",
+    "@testing-library/react": "^16.3.3",
     "@types/node": "^24.13.6",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.1.1",
+    "jsdom": "^31.0.1",
+    "msw": "^3.0.7",
     "typescript": "~7.0.2",
-    "vite": "^8.3.0"
+    "vite": "^8.3.0",
+    "vitest": "^5.1.1"
   },
   "packageManager": "pnpm@11.1.2"
 }

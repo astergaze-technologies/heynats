@@ -1,0 +1,196 @@
+{
+  "streams": [
+    {
+      "config": {
+        "name": "KV_config",
+        "subjects": [
+          "$KV.config.>"
+        ],
+        "retention": "limits",
+        "max_consumers": -1,
+        "max_msgs": -1,
+        "max_bytes": -1,
+        "discard": "new",
+        "max_age": 0,
+        "max_msgs_per_subject": 1,
+        "max_msg_size": -1,
+        "storage": "file",
+        "num_replicas": 3,
+        "duplicate_window": 120000000000,
+        "deny_delete": true,
+        "allow_rollup_hdrs": true,
+        "compression": "none",
+        "allow_direct": true,
+        "mirror_direct": false,
+        "consumer_limits": {},
+        "metadata": {
+          "_nats.req.level": "0"
+        },
+        "allow_msg_ttl": false
+      },
+      "created": "2026-11-23T11:31:23.578626067Z",
+      "state": {
+        "messages": 2,
+        "bytes": 107,
+        "first_seq": 1,
+        "first_ts": "2026-11-23T11:31:24.007623676Z",
+        "last_seq": 2,
+        "last_ts": "2026-11-23T11:31:24.139188507Z",
+        "consumer_count": 0,
+        "deleted": null,
+        "num_deleted": 0,
+        "num_subjects": 2,
+        "subjects": null
+      },
+      "cluster": {
+        "name": "heynats",
+        "raft_group": "S-R3F-8HEnplUg",
+        "leader": "n1",
+        "leader_since": "2026-11-23T11:31:23.80085018Z",
+        "system_account": true,
+        "traffic_account": "SYS",
+        "replicas": [
+          {
+            "name": "n2",
+            "current": true,
+            "active": 176821055,
+            "peer": "44jzkV9D"
+          },
+          {
+            "name": "n3",
+            "current": true,
+            "active": 176842930,
+            "peer": "BXScrY9i"
+          }
+        ]
+      }
+    },
+    {
+      "config": {
+        "name": "ORDERS",
+        "subjects": [
+          "orders.>"
+        ],
+        "retention": "limits",
+        "max_consumers": -1,
+        "max_msgs": -1,
+        "max_bytes": -1,
+        "discard": "old",
+        "max_age": 0,
+        "max_msgs_per_subject": -1,
+        "max_msg_size": -1,
+        "storage": "file",
+        "num_replicas": 3,
+        "duplicate_window": 120000000000,
+        "compression": "none",
+        "allow_direct": true,
+        "mirror_direct": false,
+        "consumer_limits": {},
+        "metadata": {
+          "_nats.req.level": "0"
+        },
+        "allow_msg_ttl": false
+      },
+      "created": "2026-11-23T11:31:19.879479525Z",
+      "state": {
+        "messages": 25,
+        "bytes": 1601,
+        "first_seq": 1,
+        "first_ts": "2026-11-23T11:31:20.202475026Z",
+        "last_seq": 25,
+        "last_ts": "2026-11-23T11:31:23.444515064Z",
+        "consumer_count": 0,
+        "deleted": null,
+        "num_deleted": 0,
+        "num_subjects": 1,
+        "subjects": null
+      },
+      "cluster": {
+        "name": "heynats",
+        "raft_group": "S-R3F-7byXOGT7",
+        "leader": "n2",
+        "leader_since": "2026-11-23T11:31:20.035460659Z",
+        "system_account": true,
+        "traffic_account": "SYS",
+        "replicas": [
+          {
+            "name": "n1",
+            "current": true,
+            "active": 871423956,
+            "peer": "fjFyEjc1"
+          },
+          {
+            "name": "n3",
+            "current": true,
+            "active": 871474290,
+            "peer": "BXScrY9i"
+          }
+        ]
+      }
+    },
+    {
+      "config": {
+        "name": "R3",
+        "subjects": [
+          "r3.>"
+        ],
+        "retention": "limits",
+        "max_consumers": -1,
+        "max_msgs": -1,
+        "max_bytes": -1,
+        "discard": "old",
+        "max_age": 0,
+        "max_msgs_per_subject": -1,
+        "max_msg_size": -1,
+        "storage": "file",
+        "num_replicas": 3,
+        "duplicate_window": 120000000000,
+        "compression": "none",
+        "allow_direct": true,
+        "mirror_direct": false,
+        "consumer_limits": {},
+        "metadata": {
+          "_nats.req.level": "0"
+        },
+        "allow_msg_ttl": false
+      },
+      "created": "2026-11-23T11:20:34.637455285Z",
+      "state": {
+        "messages": 0,
+        "bytes": 0,
+        "first_seq": 0,
+        "first_ts": "0001-01-01T00:00:00Z",
+        "last_seq": 0,
+        "last_ts": "0001-01-01T00:00:00Z",
+        "consumer_count": 0,
+        "deleted": null,
+        "num_deleted": 0,
+        "num_subjects": 0,
+        "subjects": null
+      },
+      "cluster": {
+        "name": "heynats",
+        "raft_group": "S-R3F-HCSa5maq",
+        "leader": "n1",
+        "leader_since": "2026-11-23T11:20:34.803499501Z",
+        "system_account": true,
+        "traffic_account": "SYS",
+        "replicas": [
+          {
+            "name": "n2",
+            "current": true,
+            "active": 512059209,
+            "peer": "44jzkV9D"
+          },
+          {
+            "name": "n3",
+            "current": true,
+            "active": 511996500,
+            "peer": "BXScrY9i"
+          }
+        ]
+      }
+    }
+  ],
+  "total": 3
+}
