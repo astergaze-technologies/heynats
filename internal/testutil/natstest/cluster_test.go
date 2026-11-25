@@ -10,7 +10,7 @@ import (
 )
 
 func TestClusterR3StreamSurvivesNodeLoss(t *testing.T) {
-	c := StartCluster(t, 3)
+	c := StartCluster(t, 3, "")
 	nc, err := nats.Connect(c.URLs())
 	if err != nil {
 		t.Fatal(err)

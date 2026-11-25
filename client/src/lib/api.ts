@@ -74,14 +74,17 @@ export interface AccountInformation {
   user: string;
 }
 
+// CONNZ summed over every server that answered.
 export interface ConnectionLimits {
+  source: 'system' | 'account';
+  partial: boolean;
+  servers: number;
   connections: Connection[];
   limit: number;
   now: string;
   num_connections: number;
-  offset: number;
-  server_id: string;
   total: number;
+  errors?: string[];
 }
 
 export interface AccountInfo {

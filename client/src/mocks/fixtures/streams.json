@@ -28,14 +28,14 @@
         },
         "allow_msg_ttl": false
       },
-      "created": "2026-11-23T11:31:23.578626067Z",
+      "created": "2026-11-23T12:35:35.518104616Z",
       "state": {
         "messages": 2,
         "bytes": 107,
         "first_seq": 1,
-        "first_ts": "2026-11-23T11:31:24.007623676Z",
+        "first_ts": "2026-11-23T12:35:35.761345695Z",
         "last_seq": 2,
-        "last_ts": "2026-11-23T11:31:24.139188507Z",
+        "last_ts": "2026-11-23T12:35:35.895364098Z",
         "consumer_count": 0,
         "deleted": null,
         "num_deleted": 0,
@@ -44,22 +44,22 @@
       },
       "cluster": {
         "name": "heynats",
-        "raft_group": "S-R3F-8HEnplUg",
-        "leader": "n1",
-        "leader_since": "2026-11-23T11:31:23.80085018Z",
+        "raft_group": "S-R3F-A5ePIo5m",
+        "leader": "n2",
+        "leader_since": "2026-11-23T12:35:35.622701157Z",
         "system_account": true,
         "traffic_account": "SYS",
         "replicas": [
           {
-            "name": "n2",
+            "name": "n1",
             "current": true,
-            "active": 176821055,
-            "peer": "44jzkV9D"
+            "active": 158808420,
+            "peer": "fjFyEjc1"
           },
           {
             "name": "n3",
             "current": true,
-            "active": 176842930,
+            "active": 159099629,
             "peer": "BXScrY9i"
           }
         ]
@@ -91,14 +91,14 @@
         },
         "allow_msg_ttl": false
       },
-      "created": "2026-11-23T11:31:19.879479525Z",
+      "created": "2026-11-23T12:35:31.913671328Z",
       "state": {
         "messages": 25,
         "bytes": 1601,
         "first_seq": 1,
-        "first_ts": "2026-11-23T11:31:20.202475026Z",
+        "first_ts": "2026-11-23T12:35:32.17974517Z",
         "last_seq": 25,
-        "last_ts": "2026-11-23T11:31:23.444515064Z",
+        "last_ts": "2026-11-23T12:35:35.394281822Z",
         "consumer_count": 0,
         "deleted": null,
         "num_deleted": 0,
@@ -107,22 +107,22 @@
       },
       "cluster": {
         "name": "heynats",
-        "raft_group": "S-R3F-7byXOGT7",
-        "leader": "n2",
-        "leader_since": "2026-11-23T11:31:20.035460659Z",
+        "raft_group": "S-R3F-C0fauguf",
+        "leader": "n1",
+        "leader_since": "2026-11-23T12:35:32.0349002Z",
         "system_account": true,
         "traffic_account": "SYS",
         "replicas": [
           {
-            "name": "n1",
+            "name": "n2",
             "current": true,
-            "active": 871423956,
-            "peer": "fjFyEjc1"
+            "active": 749977911,
+            "peer": "44jzkV9D"
           },
           {
             "name": "n3",
             "current": true,
-            "active": 871474290,
+            "active": 749993661,
             "peer": "BXScrY9i"
           }
         ]
@@ -154,7 +154,7 @@
         },
         "allow_msg_ttl": false
       },
-      "created": "2026-11-23T11:20:34.637455285Z",
+      "created": "2026-11-23T12:35:31.658435804Z",
       "state": {
         "messages": 0,
         "bytes": 0,
@@ -170,22 +170,22 @@
       },
       "cluster": {
         "name": "heynats",
-        "raft_group": "S-R3F-HCSa5maq",
+        "raft_group": "S-R3F-0KvQhJ3O",
         "leader": "n1",
-        "leader_since": "2026-11-23T11:20:34.803499501Z",
+        "leader_since": "2026-11-23T12:35:31.777460045Z",
         "system_account": true,
         "traffic_account": "SYS",
         "replicas": [
           {
             "name": "n2",
             "current": true,
-            "active": 512059209,
+            "active": 4935136,
             "peer": "44jzkV9D"
           },
           {
             "name": "n3",
             "current": true,
-            "active": 511996500,
+            "active": 4935761,
             "peer": "BXScrY9i"
           }
         ]

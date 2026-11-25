@@ -17,25 +17,29 @@ type Cluster struct {
 	Servers []*server.Server
 }
 
-// StartCluster starts n clustered JetStream servers. Ports are fixed per
-// node so Restart brings a node back on the same URL and store.
-func StartCluster(t testing.TB, n int) *Cluster {
+// StartCluster starts n clustered JetStream servers, using accounts and users
+// from conf when it isn't empty. Ports are fixed per node so Restart brings a
+// node back on the same URL and store.
+func StartCluster(t testing.TB, n int, conf string) *Cluster {
 	t.Helper()
 	routes := make([]string, n)
 	c := &Cluster{t: t, opts: make([]*server.Options, n), Servers: make([]*server.Server, n)}
 	for i := range n {
 		routePort := freePort(t)
 		routes[i] = fmt.Sprintf("nats://127.0.0.1:%d", routePort)
-		c.opts[i] = &server.Options{
-			ServerName: fmt.Sprintf("n%d", i+1),
-			Host:       "127.0.0.1",
-			Port:       freePort(t),
-			JetStream:  true,
-			StoreDir:   t.TempDir(),
-			NoLog:      true,
-			NoSigs:     true,
-			Cluster:    server.ClusterOpts{Name: "test", Host: "127.0.0.1", Port: routePort},
+		o := &server.Options{}
+		if conf != "" {
+			var err error
+			if o, err = server.ProcessConfigFile(conf); err != nil {
+				t.Fatal(err)
+			}
 		}
+		o.ServerName = fmt.Sprintf("n%d", i+1)
+		o.Host, o.Port, o.HTTPPort = "127.0.0.1", freePort(t), 0
+		o.JetStream, o.StoreDir = true, t.TempDir()
+		o.NoLog, o.NoSigs = true, true
+		o.Cluster = server.ClusterOpts{Name: "test", Host: "127.0.0.1", Port: routePort}
+		c.opts[i] = o
 	}
 	for i := range n {
 		c.opts[i].Routes = server.RoutesFromStr(strings.Join(routes, ","))
