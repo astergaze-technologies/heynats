@@ -5,6 +5,9 @@ import info from './fixtures/info.json';
 import jetstream from './fixtures/jetstream.json';
 import kvBuckets from './fixtures/kv-buckets.json';
 import metrics from './fixtures/metrics.json';
+import routez from './fixtures/server-routez.json';
+import varz from './fixtures/server-varz.json';
+import servers from './fixtures/servers.json';
 import status from './fixtures/status.json';
 import streams from './fixtures/streams.json';
 
@@ -30,4 +33,12 @@ export const handlers = [
   http.get('/api/nats/kv/buckets', () => HttpResponse.json(kvBuckets)),
   http.get('/api/nats/metrics', () => HttpResponse.json(metrics)),
   http.get('/api/nats/jetstream', () => HttpResponse.json(jetstream)),
+  http.get('/api/nats/servers', () => HttpResponse.json(servers)),
+  http.get('/api/nats/servers/:id/raw/:kind', ({ params }) =>
+    HttpResponse.json(
+      ({ VARZ: varz, ROUTEZ: routez } as Record<string, unknown>)[
+        params.kind as string
+      ] ?? {}
+    )
+  ),
 ];

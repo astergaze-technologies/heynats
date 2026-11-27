@@ -43,7 +43,7 @@ interface TabsListProps {
 
 export function TabsList({ children, className }: TabsListProps) {
   return (
-    <div className={cn(
+    <div role="tablist" className={cn(
       "inline-flex h-9 items-center justify-center rounded-lg bg-muted p-1 text-muted-foreground",
       className
     )}>
@@ -69,6 +69,9 @@ export function TabsTrigger({ value, children, className }: TabsTriggerProps) {
   
   return (
     <button
+      type="button"
+      role="tab"
+      aria-selected={isActive}
       className={cn(
         "inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
         isActive
@@ -104,7 +107,7 @@ export function TabsContent({ value, children, className, forceMount }: TabsCont
   }
   
   return (
-    <div hidden={activeTab !== value} className={cn(
+    <div role="tabpanel" hidden={activeTab !== value} className={cn(
       "mt-2 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
       className
     )}>

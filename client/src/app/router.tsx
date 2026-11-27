@@ -43,6 +43,25 @@ export const router = createBrowserRouter([
             ),
           },
           {
+            path: 'servers',
+            handle: { title: 'Servers' } satisfies RouteHandle,
+            ...page(
+              () => import('@/features/servers/ServersPage'),
+              'ServersPage'
+            ),
+          },
+          {
+            path: 'servers/:serverName',
+            handle: {
+              title: (p) => p.serverName ?? '',
+              parent: { label: 'Servers', to: '/dashboard/servers' },
+            } satisfies RouteHandle,
+            ...page(
+              () => import('@/features/servers/ServerDetailPage'),
+              'ServerDetailPage'
+            ),
+          },
+          {
             path: 'streams',
             handle: { title: 'Streams' } satisfies RouteHandle,
             ...page(

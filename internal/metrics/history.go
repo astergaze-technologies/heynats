@@ -190,3 +190,25 @@ func (h *History) Window(names []string, span time.Duration, now time.Time) Wind
 	}
 	return w
 }
+
+// Latest returns each member's newest value of the named series from the
+// last minute; members with nothing recent are left out.
+func (h *History) Latest(name string, now time.Time) map[string]float32 {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	rows := h.fine.rows(now.Add(-time.Minute).Unix())
+	out := map[string]float32{}
+	for k, col := range h.fine.cols {
+		series, member, _ := strings.Cut(k, "|")
+		if series != name {
+			continue
+		}
+		for j := len(rows) - 1; j >= 0; j-- {
+			if v := col[rows[j]]; !math.IsNaN(float64(v)) {
+				out[member] = v
+				break
+			}
+		}
+	}
+	return out
+}

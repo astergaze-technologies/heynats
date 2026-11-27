@@ -5,6 +5,7 @@ import {
   Headphones,
   LayoutDashboard,
   Send,
+  Server,
 } from 'lucide-react';
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
@@ -66,6 +67,12 @@ const Sidebar = () => {
       path: '/dashboard',
       icon: <LayoutDashboard className="h-5 w-5" />,
       exact: true,
+    },
+    {
+      name: 'Servers',
+      path: '/dashboard/servers',
+      icon: <Server className="h-5 w-5" />,
+      exact: false,
     },
     {
       name: 'Streams',
