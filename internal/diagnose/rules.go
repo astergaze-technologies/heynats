@@ -28,6 +28,9 @@ type Fix struct {
 	Label string `json:"label"`
 	Link  string `json:"link,omitempty"`
 	CLI   string `json:"cli,omitempty"`
+	// Action is an operation the UI can run after confirming, e.g. "consumer.resume".
+	Action string            `json:"action,omitempty"`
+	Params map[string]string `json:"params,omitempty"`
 }
 
 type Finding struct {
@@ -76,6 +79,23 @@ type Consumer struct {
 	Pending uint64
 	Since   uint64
 	Growing bool
+
+	Stream, Consumer string // for CLI commands and actions
+	OwnAccount       bool   // the user's own account: actions can run
+	Paused           bool
+	AckPending       int
+	MaxAckPending    int
+	AckWait          time.Duration
+	DeliverSubject   string // set for push consumers
+	PushBound        bool
+	Waiting          int
+	Idle             time.Duration // since last delivery or ack
+	IdleTooLong      bool          // Idle is past the engine's idle window
+	Filters          []string
+	StreamSubjects   []string
+	// Over the engine's redelivery window; Redelivery is a share of Deliveries.
+	Deliveries uint64
+	Redelivery float64
 }
 
 // Snapshot is everything the rules may look at. System says whether the
@@ -100,7 +120,9 @@ type Rule struct {
 const unreachableAfter = 2 // missed checks, about 10s at the 5s default
 
 // Rules is the one list of everything HeyNATS checks.
-var Rules = []Rule{
+var Rules = append(clusterRules, consumerRules...)
+
+var clusterRules = []Rule{
 	{
 		ID:  "server.unreachable",
 		Doc: "A server that answered before has missed two checks in a row.",
@@ -371,6 +393,129 @@ var Rules = []Rule{
 			return out
 		},
 	},
+}
+
+// consumerRules need the consumer's own state, read through JSZ or the JetStream API.
+var consumerRules = []Rule{
+	{
+		ID:  "consumer.paused",
+		Doc: "A consumer is paused (NATS 2.11+), so nothing is delivered from it.",
+		Check: eachConsumer("consumer.paused", func(c Consumer) *Finding {
+			if !c.Paused {
+				return nil
+			}
+			fixes := []Fix{{Label: "Resume from the CLI", CLI: fmt.Sprintf("nats consumer resume %s %s", c.Stream, c.Consumer)}}
+			if c.OwnAccount {
+				fixes = append([]Fix{{Label: "Resume", Action: "consumer.resume", Params: map[string]string{"stream": c.Stream, "consumer": c.Consumer}}}, fixes...)
+			}
+			return &Finding{
+				Severity: Warning, Title: "Consumer " + c.Name + " is paused",
+				Detail:   "It delivers nothing until resumed or its pause deadline passes; messages keep piling up.",
+				Evidence: []Evidence{{"Pending", fmt.Sprint(c.Pending), "JetStream"}},
+				Fixes:    fixes,
+			}
+		}),
+	},
+	{
+		ID:  "consumer.ack_pending_full",
+		Doc: "A consumer has as many unacknowledged messages as max_ack_pending allows, so delivery has stopped.",
+		Check: eachConsumer("consumer.ack_pending_full", func(c Consumer) *Finding {
+			if c.MaxAckPending <= 0 || c.AckPending < c.MaxAckPending {
+				return nil
+			}
+			return &Finding{
+				Severity: Warning, Title: "Consumer " + c.Name + " is waiting for acks",
+				Detail:   "No new messages go out until clients acknowledge some. Either they don't ack (check ack handling), or the limit is too low for how many they process at once.",
+				Evidence: []Evidence{{"Ack pending", fmt.Sprintf("%d of max %d", c.AckPending, c.MaxAckPending), "JetStream"}},
+				Fixes:    []Fix{{Label: "Raise the limit", CLI: fmt.Sprintf("nats consumer edit %s %s --max-pending %d", c.Stream, c.Consumer, c.MaxAckPending*2)}},
+			}
+		}),
+	},
+	{
+		ID:  "consumer.high_redelivery",
+		Doc: "More than 10% of a consumer's deliveries over the last 15 minutes were redeliveries.",
+		Check: eachConsumer("consumer.high_redelivery", func(c Consumer) *Finding {
+			if c.Deliveries < 20 || c.Redelivery <= 0.10 {
+				return nil
+			}
+			return &Finding{
+				Severity: Warning, Title: "Consumer " + c.Name + " redelivers a lot",
+				Detail: "Messages aren't acked within ack_wait, so they're sent again. Clients may be crashing, too slow, or forgetting to ack.",
+				Evidence: []Evidence{
+					{"Redeliveries", fmt.Sprintf("%.0f%% of %d deliveries", c.Redelivery*100, c.Deliveries), "JetStream"},
+					{"Ack wait", c.AckWait.String(), "consumer config"},
+				},
+				Fixes: []Fix{{Label: "Consumer info", CLI: fmt.Sprintf("nats consumer info %s %s", c.Stream, c.Consumer)}},
+			}
+		}),
+	},
+	{
+		ID:  "consumer.no_interest",
+		Doc: "A push consumer has no subscriber on its deliver subject.",
+		Check: eachConsumer("consumer.no_interest", func(c Consumer) *Finding {
+			if c.DeliverSubject == "" || c.PushBound {
+				return nil
+			}
+			return &Finding{
+				Severity: Warning, Title: "Nobody listens to consumer " + c.Name,
+				Detail:   "It pushes messages to a subject no one subscribes to, so nothing is processed.",
+				Evidence: []Evidence{{"Deliver subject", c.DeliverSubject, "consumer config"}, {"Pending", fmt.Sprint(c.Pending), "JetStream"}},
+				Fixes:    []Fix{{Label: "Watch the deliver subject", CLI: "nats sub " + c.DeliverSubject}},
+			}
+		}),
+	},
+	{
+		ID:  "consumer.nobody_pulling",
+		Doc: "A pull consumer has messages waiting but no client has pulled for over 5 minutes.",
+		Check: eachConsumer("consumer.nobody_pulling", func(c Consumer) *Finding {
+			if c.DeliverSubject != "" || c.Pending == 0 || c.Waiting > 0 || !c.IdleTooLong {
+				return nil
+			}
+			return &Finding{
+				Severity: Warning, Title: "Nobody is pulling from consumer " + c.Name,
+				Detail:   "Its workers are stopped or pointed at another consumer.",
+				Evidence: []Evidence{{"Pending", fmt.Sprint(c.Pending), "JetStream"}, {"Last active", c.Idle.Round(time.Second).String() + " ago", "JetStream"}},
+				Fixes:    []Fix{{Label: "Pull one message to test", CLI: fmt.Sprintf("nats consumer next %s %s", c.Stream, c.Consumer)}},
+			}
+		}),
+	},
+	{
+		ID:  "consumer.filter_matches_nothing",
+		Doc: "None of a consumer's filter subjects overlap the stream's subjects, so it can never receive anything.",
+		Check: eachConsumer("consumer.filter_matches_nothing", func(c Consumer) *Finding {
+			if len(c.Filters) == 0 || len(c.StreamSubjects) == 0 {
+				return nil
+			}
+			for _, f := range c.Filters {
+				for _, s := range c.StreamSubjects {
+					if subjectsOverlap(f, s) {
+						return nil
+					}
+				}
+			}
+			return &Finding{
+				Severity: Warning, Title: "Consumer " + c.Name + " filters on subjects the stream doesn't have",
+				Detail:   "Usually the stream's subjects changed after the consumer was made. Update the filter or the stream.",
+				Evidence: []Evidence{{"Filter", strings.Join(c.Filters, ", "), "consumer config"}, {"Stream subjects", strings.Join(c.StreamSubjects, ", "), "stream config"}},
+				Fixes:    []Fix{{Label: "Change the filter", CLI: fmt.Sprintf("nats consumer edit %s %s --filter %s", c.Stream, c.Consumer, c.StreamSubjects[0])}},
+			}
+		}),
+	},
+}
+
+// eachConsumer turns a per-consumer check into a rule check, filling in the
+// rule id and resource.
+func eachConsumer(id string, check func(Consumer) *Finding) func(Snapshot) []Finding {
+	return func(s Snapshot) []Finding {
+		var out []Finding
+		for _, c := range s.Consumers {
+			if f := check(c); f != nil {
+				f.RuleID, f.Resource = id, "consumer:"+c.Name
+				out = append(out, *f)
+			}
+		}
+		return out
+	}
 }
 
 func lastPart(name string) string { return name[strings.LastIndex(name, "/")+1:] }

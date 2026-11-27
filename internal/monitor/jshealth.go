@@ -25,14 +25,15 @@ type MetaGroup struct {
 }
 
 type StreamHealth struct {
-	Account   string `json:"account"`
-	Name      string `json:"name"`
-	Leader    string `json:"leader"`
-	Replicas  []Peer `json:"replicas"`
-	Clustered bool   `json:"clustered"` // false for R1 on a single server: no leader to lose
-	Messages  uint64 `json:"messages"`
-	Bytes     uint64 `json:"bytes"`
-	Consumers int    `json:"consumers"`
+	Account   string   `json:"account"`
+	Name      string   `json:"name"`
+	Subjects  []string `json:"subjects"`
+	Leader    string   `json:"leader"`
+	Replicas  []Peer   `json:"replicas"`
+	Clustered bool     `json:"clustered"` // false for R1 on a single server: no leader to lose
+	Messages  uint64   `json:"messages"`
+	Bytes     uint64   `json:"bytes"`
+	Consumers int      `json:"consumers"`
 }
 
 type ConsumerHealth struct {
@@ -44,6 +45,39 @@ type ConsumerHealth struct {
 	Pending     uint64 `json:"pending"`
 	AckPending  int    `json:"ack_pending"`
 	Redelivered int    `json:"redelivered"`
+	// For consumer diagnostics.
+	DeliverSubject  string        `json:"deliver_subject,omitempty"` // set: push consumer
+	PushBound       bool          `json:"push_bound,omitempty"`      // a subscriber is on the deliver subject
+	Waiting         int           `json:"waiting"`                   // pull requests waiting
+	MaxAckPending   int           `json:"max_ack_pending"`
+	AckWait         time.Duration `json:"ack_wait"`
+	FilterSubjects  []string      `json:"filter_subjects,omitempty"`
+	Paused          bool          `json:"paused,omitempty"`
+	Delivered       uint64        `json:"delivered"`        // deliveries, redeliveries included
+	DeliveredStream uint64        `json:"delivered_stream"` // highest stream sequence delivered
+	LastActive      *time.Time    `json:"last_active,omitempty"`
+	Created         time.Time     `json:"created"`
+}
+
+// consumerHealth flattens a consumer's info; system and account paths share it.
+func consumerHealth(account, stream string, ci *jetstream.ConsumerInfo) ConsumerHealth {
+	leader, ps, _ := peers(ci.Cluster)
+	filters := ci.Config.FilterSubjects
+	if ci.Config.FilterSubject != "" {
+		filters = append([]string{ci.Config.FilterSubject}, filters...)
+	}
+	last := ci.Delivered.Last
+	if a := ci.AckFloor.Last; a != nil && (last == nil || a.After(*last)) {
+		last = a
+	}
+	return ConsumerHealth{
+		Account: account, Stream: stream, Name: ci.Name, Leader: leader, Replicas: ps,
+		Pending: ci.NumPending, AckPending: ci.NumAckPending, Redelivered: ci.NumRedelivered,
+		DeliverSubject: ci.Config.DeliverSubject, PushBound: ci.PushBound, Waiting: ci.NumWaiting,
+		MaxAckPending: ci.Config.MaxAckPending, AckWait: ci.Config.AckWait, FilterSubjects: filters,
+		Paused: ci.Paused, Delivered: ci.Delivered.Consumer, DeliveredStream: ci.Delivered.Stream,
+		LastActive: last, Created: ci.Created,
+	}
 }
 
 type JetStreamHealth struct {
@@ -63,7 +97,7 @@ func (m *Monitor) JetStreamHealth() (*JetStreamHealth, error) {
 	if m.Source() != System {
 		return m.accountJetStreamHealth()
 	}
-	res, err := m.PingWith("JSZ", map[string]bool{"accounts": true, "streams": true, "consumer": true})
+	res, err := m.PingWith("JSZ", map[string]bool{"accounts": true, "streams": true, "consumer": true, "config": true})
 	if err != nil {
 		return nil, err
 	}
@@ -82,18 +116,15 @@ func (m *Monitor) JetStreamHealth() (*JetStreamHealth, error) {
 				Streams []struct {
 					Name    string      `json:"name"`
 					Cluster *jszCluster `json:"cluster"`
-					State   struct {
+					Config  *struct {
+						Subjects []string `json:"subjects"`
+					} `json:"config"`
+					State struct {
 						Msgs      uint64 `json:"messages"`
 						Bytes     uint64 `json:"bytes"`
 						Consumers int    `json:"consumer_count"`
 					} `json:"state"`
-					Consumers []struct {
-						Name           string      `json:"name"`
-						Cluster        *jszCluster `json:"cluster"`
-						NumPending     uint64      `json:"num_pending"`
-						NumAckPending  int         `json:"num_ack_pending"`
-						NumRedelivered int         `json:"num_redelivered"`
-					} `json:"consumer_detail"`
+					Consumers []jetstream.ConsumerInfo `json:"consumer_detail"`
 				} `json:"stream_detail"`
 			} `json:"account_details"`
 		}
@@ -114,25 +145,26 @@ func (m *Monitor) JetStreamHealth() (*JetStreamHealth, error) {
 				}
 				// Keep the leader's report; without a leader, any replica's.
 				if _, seen := streams[key]; !seen || leader == me {
+					var subjects []string
+					if s.Config != nil {
+						subjects = s.Config.Subjects
+					}
 					streams[key] = StreamHealth{
-						Account: a.Name, Name: s.Name, Leader: leader, Replicas: peers,
+						Account: a.Name, Name: s.Name, Subjects: subjects, Leader: leader, Replicas: peers,
 						Clustered: s.Cluster != nil && (len(peers) > 0 || leader != ""),
 						Messages:  s.State.Msgs, Bytes: s.State.Bytes, Consumers: s.State.Consumers,
 					}
 				}
-				for _, c := range s.Consumers {
+				for i := range s.Consumers {
+					c := &s.Consumers[i]
 					ckey := key + "/" + c.Name
 					cl := ""
-					var cp []Peer
 					if c.Cluster != nil {
-						cl, cp = c.Cluster.Leader, c.Cluster.Replicas
+						cl = c.Cluster.Leader
 					}
 					// Only a consumer's own leader tracks pending.
 					if _, seen := consumers[ckey]; !seen || cl == me {
-						consumers[ckey] = ConsumerHealth{
-							Account: a.Name, Stream: s.Name, Name: c.Name, Leader: cl, Replicas: cp,
-							Pending: c.NumPending, AckPending: c.NumAckPending, Redelivered: c.NumRedelivered,
-						}
+						consumers[ckey] = consumerHealth(a.Name, s.Name, c)
 					}
 				}
 			}
@@ -181,7 +213,7 @@ func (m *Monitor) accountJetStreamHealth() (*JetStreamHealth, error) {
 	for si := range list.Info() {
 		leader, ps, clustered := peers(si.Cluster)
 		out.Streams = append(out.Streams, StreamHealth{
-			Name: si.Config.Name, Leader: leader, Replicas: ps, Clustered: clustered,
+			Name: si.Config.Name, Subjects: si.Config.Subjects, Leader: leader, Replicas: ps, Clustered: clustered,
 			Messages: si.State.Msgs, Bytes: si.State.Bytes, Consumers: si.State.Consumers,
 		})
 		st, err := js.Stream(ctx, si.Config.Name)
@@ -190,11 +222,7 @@ func (m *Monitor) accountJetStreamHealth() (*JetStreamHealth, error) {
 		}
 		cl := st.ListConsumers(ctx)
 		for ci := range cl.Info() {
-			l, cp, _ := peers(ci.Cluster)
-			out.Consumers = append(out.Consumers, ConsumerHealth{
-				Stream: si.Config.Name, Name: ci.Name, Leader: l, Replicas: cp,
-				Pending: ci.NumPending, AckPending: ci.NumAckPending, Redelivered: ci.NumRedelivered,
-			})
+			out.Consumers = append(out.Consumers, consumerHealth("", si.Config.Name, ci))
 		}
 		if err := cl.Err(); err != nil {
 			return nil, err

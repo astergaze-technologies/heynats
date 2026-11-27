@@ -1,0 +1,165 @@
+{
+  "verdict": "degraded",
+  "checked_at": "2026-11-27T18:49:51.449884+05:45",
+  "source": "account",
+  "servers": [
+    {
+      "name": "n1",
+      "responding": true
+    },
+    {
+      "name": "n2",
+      "responding": true
+    },
+    {
+      "name": "n3",
+      "responding": true
+    }
+  ],
+  "findings": [
+    {
+      "rule_id": "consumer.ack_pending_full",
+      "severity": "warning",
+      "resource": "consumer:ORDERS/billing",
+      "title": "Consumer ORDERS/billing is waiting for acks",
+      "detail": "No new messages go out until clients acknowledge some. Either they don't ack (check ack handling), or the limit is too low for how many they process at once.",
+      "evidence": [
+        {
+          "label": "Ack pending",
+          "value": "5 of max 5",
+          "source": "JetStream"
+        }
+      ],
+      "fixes": [
+        {
+          "label": "Raise the limit",
+          "cli": "nats consumer edit ORDERS billing --max-pending 10"
+        }
+      ],
+      "first_seen": "2026-11-27T18:49:51.449884+05:45",
+      "last_seen": "2026-11-27T18:49:51.449884+05:45"
+    },
+    {
+      "rule_id": "consumer.paused",
+      "severity": "warning",
+      "resource": "consumer:ORDERS/shipping",
+      "title": "Consumer ORDERS/shipping is paused",
+      "detail": "It delivers nothing until resumed or its pause deadline passes; messages keep piling up.",
+      "evidence": [
+        {
+          "label": "Pending",
+          "value": "50",
+          "source": "JetStream"
+        }
+      ],
+      "fixes": [
+        {
+          "label": "Resume",
+          "action": "consumer.resume",
+          "params": {
+            "consumer": "shipping",
+            "stream": "ORDERS"
+          }
+        },
+        {
+          "label": "Resume from the CLI",
+          "cli": "nats consumer resume ORDERS shipping"
+        }
+      ],
+      "first_seen": "2026-11-27T18:49:51.449884+05:45",
+      "last_seen": "2026-11-27T18:49:51.449884+05:45"
+    }
+  ],
+  "rules": [
+    {
+      "id": "server.unreachable",
+      "doc": "A server that answered before has missed two checks in a row.",
+      "available": true
+    },
+    {
+      "id": "server.healthz",
+      "doc": "A responding server reports itself unhealthy (for example JetStream not current).",
+      "available": false,
+      "reason": "Requires a system account user"
+    },
+    {
+      "id": "server.version_mismatch",
+      "doc": "Servers in one cluster run different NATS versions.",
+      "available": false,
+      "reason": "Requires a system account user"
+    },
+    {
+      "id": "server.slow_consumers",
+      "doc": "The slow-consumer count went up in the last 5 minutes.",
+      "available": false,
+      "reason": "Requires a system account user"
+    },
+    {
+      "id": "server.connections_near_limit",
+      "doc": "A server has more than 90% of max_connections in use.",
+      "available": false,
+      "reason": "Requires a system account user"
+    },
+    {
+      "id": "js.meta_no_leader",
+      "doc": "A clustered JetStream server sees no meta leader, so streams can't be created or changed.",
+      "available": false,
+      "reason": "Requires a system account user"
+    },
+    {
+      "id": "js.storage_near_limit",
+      "doc": "JetStream file storage is over 80% (warning) or 95% (critical) of a server or account limit.",
+      "available": true
+    },
+    {
+      "id": "js.stream_no_leader",
+      "doc": "A replicated stream has no leader, so it accepts no writes.",
+      "available": true
+    },
+    {
+      "id": "js.replica_offline",
+      "doc": "A stream replica's server hasn't been seen by the stream leader recently.",
+      "available": true
+    },
+    {
+      "id": "js.replica_lagging",
+      "doc": "A stream replica has been behind its leader for more than a minute.",
+      "available": true
+    },
+    {
+      "id": "js.consumer_lag_growing",
+      "doc": "A consumer's pending count has only gone up for the last 15 minutes.",
+      "available": true
+    },
+    {
+      "id": "consumer.paused",
+      "doc": "A consumer is paused (NATS 2.11+), so nothing is delivered from it.",
+      "available": true
+    },
+    {
+      "id": "consumer.ack_pending_full",
+      "doc": "A consumer has as many unacknowledged messages as max_ack_pending allows, so delivery has stopped.",
+      "available": true
+    },
+    {
+      "id": "consumer.high_redelivery",
+      "doc": "More than 10% of a consumer's deliveries over the last 15 minutes were redeliveries.",
+      "available": true
+    },
+    {
+      "id": "consumer.no_interest",
+      "doc": "A push consumer has no subscriber on its deliver subject.",
+      "available": true
+    },
+    {
+      "id": "consumer.nobody_pulling",
+      "doc": "A pull consumer has messages waiting but no client has pulled for over 5 minutes.",
+      "available": true
+    },
+    {
+      "id": "consumer.filter_matches_nothing",
+      "doc": "None of a consumer's filter subjects overlap the stream's subjects, so it can never receive anything.",
+      "available": true
+    }
+  ]
+}
