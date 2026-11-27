@@ -32,7 +32,8 @@
     "sonner": "^2.0.8",
     "tailwind-merge": "^3.7.0",
     "tailwindcss": "^4.3.3",
-    "tailwindcss-animate": "^1.0.7"
+    "tailwindcss-animate": "^1.0.7",
+    "uplot": "^1.6.32"
   },
   "devDependencies": {
     "@testing-library/dom": "^10.4.2",

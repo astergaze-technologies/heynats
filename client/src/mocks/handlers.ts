@@ -3,6 +3,7 @@ import account from './fixtures/account.json';
 import capabilities from './fixtures/capabilities.json';
 import info from './fixtures/info.json';
 import kvBuckets from './fixtures/kv-buckets.json';
+import metrics from './fixtures/metrics.json';
 import status from './fixtures/status.json';
 import streams from './fixtures/streams.json';
 
@@ -26,4 +27,5 @@ export const handlers = [
   http.get('/api/nats/capabilities', () => HttpResponse.json(capabilities)),
   http.get('/api/nats/streams', () => HttpResponse.json(streams)),
   http.get('/api/nats/kv/buckets', () => HttpResponse.json(kvBuckets)),
+  http.get('/api/nats/metrics', () => HttpResponse.json(metrics)),
 ];

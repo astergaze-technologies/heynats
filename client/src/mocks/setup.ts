@@ -12,6 +12,13 @@ window.matchMedia = (query) =>
     removeEventListener() {},
   }) as unknown as MediaQueryList;
 
+// jsdom has no ResizeObserver; charts use it to follow their card's width.
+window.ResizeObserver = class {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+};
+
 export const server = setupServer(...handlers);
 
 beforeAll(() => server.listen({ onUnhandledRequest: 'error' }));

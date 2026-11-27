@@ -106,6 +106,14 @@ export interface Capabilities {
   features: Record<FeatureName, { ok: boolean; reason?: string }>;
 }
 
+/** Chart-ready history: series[name][member][i] is the value at t[i] (unix s). */
+export interface MetricsWindow {
+  history_since: string;
+  step: number;
+  t: number[];
+  series: Record<string, Record<string, (number | null)[]>>;
+}
+
 export interface AccountInfo {
   account_information: AccountInformation;
   connection_limits: ConnectionLimits;
@@ -188,6 +196,11 @@ export const natsApi = {
 
   getCapabilities: (): Promise<Capabilities> =>
     apiRequest('/nats/capabilities'),
+
+  getMetrics: (series: string[], range: string): Promise<MetricsWindow> =>
+    apiRequest(
+      `/nats/metrics?${new URLSearchParams({ series: series.join(','), range })}`
+    ),
 };
 
 // JetStream Stream interfaces
