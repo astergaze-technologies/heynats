@@ -48,6 +48,14 @@ export const router = createBrowserRouter([
             ...page(() => import('@/features/health/HealthPage'), 'HealthPage'),
           },
           {
+            path: 'connections',
+            handle: { title: 'Connections' } satisfies RouteHandle,
+            ...page(
+              () => import('@/features/connections/ConnectionsPage'),
+              'ConnectionsPage'
+            ),
+          },
+          {
             path: 'servers',
             handle: { title: 'Servers' } satisfies RouteHandle,
             ...page(

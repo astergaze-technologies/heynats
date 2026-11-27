@@ -1,6 +1,9 @@
 import { HttpResponse, http } from 'msw';
 import account from './fixtures/account.json';
 import capabilities from './fixtures/capabilities.json';
+import detail from './fixtures/connection-detail.json';
+import connections from './fixtures/connections.json';
+import closedConnections from './fixtures/connections-closed.json';
 import diagnostics from './fixtures/diagnostics.json';
 import info from './fixtures/info.json';
 import jetstream from './fixtures/jetstream.json';
@@ -36,6 +39,16 @@ export const handlers = [
   http.get('/api/nats/jetstream', () => HttpResponse.json(jetstream)),
   http.get('/api/nats/servers', () => HttpResponse.json(servers)),
   http.get('/api/nats/diagnostics', () => HttpResponse.json(diagnostics)),
+  http.get('/api/nats/connections', ({ request }) =>
+    HttpResponse.json(
+      new URL(request.url).searchParams.get('state') === 'open'
+        ? connections
+        : closedConnections
+    )
+  ),
+  http.get('/api/nats/connections/:server/:cid', () =>
+    HttpResponse.json(detail)
+  ),
   http.get('/api/nats/servers/:id/raw/:kind', ({ params }) =>
     HttpResponse.json(
       ({ VARZ: varz, ROUTEZ: routez } as Record<string, unknown>)[

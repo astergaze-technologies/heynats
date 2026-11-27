@@ -1,5 +1,6 @@
 import {
   BarChart3,
+  Cable,
   ChevronLeft,
   Database,
   Headphones,
@@ -79,6 +80,12 @@ const Sidebar = () => {
       name: 'Servers',
       path: '/dashboard/servers',
       icon: <Server className="h-5 w-5" />,
+      exact: false,
+    },
+    {
+      name: 'Connections',
+      path: '/dashboard/connections',
+      icon: <Cable className="h-5 w-5" />,
       exact: false,
     },
     {
