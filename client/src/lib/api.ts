@@ -128,6 +128,41 @@ export interface JetStreamSummary {
   consumers: number;
 }
 
+export interface ServerRow {
+  name: string;
+  id: string;
+  cluster?: string;
+  version: string;
+  responding: boolean;
+  health?: string; // "ok" or the server's reason
+  start?: string;
+  cpu: number;
+  mem: number;
+  connections: number;
+  subscriptions: number;
+  slow_consumers: number;
+  jetstream: boolean;
+  msgs_in: number | null;
+  msgs_out: number | null;
+}
+
+export interface ServerList {
+  partial: boolean;
+  expected: number;
+  servers: ServerRow[];
+}
+
+export type ServerKind =
+  | 'VARZ'
+  | 'HEALTHZ'
+  | 'ROUTEZ'
+  | 'GATEWAYZ'
+  | 'LEAFZ'
+  | 'JSZ'
+  | 'SUBSZ'
+  | 'CONNZ'
+  | 'ACCOUNTZ';
+
 export interface AccountInfo {
   account_information: AccountInformation;
   connection_limits: ConnectionLimits;
@@ -212,6 +247,11 @@ export const natsApi = {
     apiRequest('/nats/capabilities'),
 
   getJetStream: (): Promise<JetStreamSummary> => apiRequest('/nats/jetstream'),
+
+  getServers: (): Promise<ServerList> => apiRequest('/nats/servers'),
+
+  getServerRaw: (id: string, kind: ServerKind): Promise<any> =>
+    apiRequest(`/nats/servers/${encodeURIComponent(id)}/raw/${kind}`),
 
   getMetrics: (series: string[], range: string): Promise<MetricsWindow> =>
     apiRequest(

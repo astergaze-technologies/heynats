@@ -1,0 +1,57 @@
+{
+  "partial": false,
+  "expected": 3,
+  "servers": [
+    {
+      "name": "n1",
+      "id": "NB2D3TEX2SD4MB5GGT47J65YM6CGNQGBBNIA6MD4EXDGUT7M6NWEEOYL",
+      "cluster": "heynats",
+      "version": "2.12.0",
+      "responding": true,
+      "health": "ok",
+      "start": "2026-11-27T10:10:21.834560481Z",
+      "cpu": 1,
+      "mem": 15204352,
+      "connections": 1,
+      "subscriptions": 271,
+      "slow_consumers": 0,
+      "jetstream": true,
+      "msgs_in": 9.500357,
+      "msgs_out": 10.500394
+    },
+    {
+      "name": "n2",
+      "id": "NAJAKJAXO4SZENF6HTKKX6WMBR77LNKNHUW24TUFJLD3JVUQOFORIVFW",
+      "cluster": "heynats",
+      "version": "2.12.0",
+      "responding": true,
+      "health": "ok",
+      "start": "2026-11-27T10:10:21.842554249Z",
+      "cpu": 0,
+      "mem": 15613952,
+      "connections": 0,
+      "subscriptions": 271,
+      "slow_consumers": 0,
+      "jetstream": true,
+      "msgs_in": 7.5002813,
+      "msgs_out": 7.5002813
+    },
+    {
+      "name": "n3",
+      "id": "NASEZKKIIMVHAARE7CZQSX5RIYVIITAYNJRWBWUMKGZXEAVKYBJUTD2C",
+      "cluster": "heynats",
+      "version": "2.12.0",
+      "responding": true,
+      "health": "ok",
+      "start": "2026-11-27T10:10:21.824582126Z",
+      "cpu": 0,
+      "mem": 15773696,
+      "connections": 0,
+      "subscriptions": 271,
+      "slow_consumers": 0,
+      "jetstream": true,
+      "msgs_in": 8.5003195,
+      "msgs_out": 8.5003195
+    }
+  ]
+}

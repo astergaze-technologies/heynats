@@ -1,5 +1,11 @@
 import { expect, test } from 'vitest';
-import { formatBytes, formatClock, formatCount, formatRate } from './format';
+import {
+  formatBytes,
+  formatClock,
+  formatCount,
+  formatRate,
+  formatUptime,
+} from './format';
 
 test('formatCount', () => {
   expect(formatCount(0)).toBe('0');
@@ -33,4 +39,14 @@ test('formatBytes', () => {
 test('formatClock', () => {
   expect(formatClock(0, true)).toBe('00:00 UTC');
   expect(formatClock(3600 * 10 + 42 * 60, true)).toBe('10:42 UTC');
+});
+
+test('formatUptime', () => {
+  const now = Date.parse('2026-01-03T05:30:00Z');
+  expect(formatUptime('2026-01-03T05:29:15Z', now)).toBe('45s');
+  expect(formatUptime('2026-01-03T05:18:00Z', now)).toBe('12m');
+  expect(formatUptime('2026-01-03T02:18:00Z', now)).toBe('3h 12m');
+  expect(formatUptime('2026-01-01T02:00:00Z', now)).toBe('2d 3h');
+  expect(formatUptime('2026-01-04T00:00:00Z', now)).toBe('0s');
+  expect(formatUptime('not a date', now)).toBe('—');
 });

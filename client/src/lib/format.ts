@@ -37,6 +37,19 @@ export function formatBytes(bytes: number): string {
   return `${sign}${Number.parseFloat((abs / 1024 ** i).toFixed(2))} ${UNITS[i]}`;
 }
 
+/** Time since an ISO start: "45s", "12m", "3h 12m", "2d 3h". */
+export function formatUptime(startISO: string, now = Date.now()): string {
+  const s = Math.max(0, Math.floor((now - Date.parse(startISO)) / 1000));
+  if (!Number.isFinite(s)) return '—';
+  const d = Math.floor(s / 86_400);
+  const h = Math.floor((s % 86_400) / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  if (d) return `${d}d ${h}h`;
+  if (h) return `${h}h ${m}m`;
+  if (m) return `${m}m`;
+  return `${s}s`;
+}
+
 /** Unix seconds -> local "10:42", or "10:42 UTC" when utc. */
 export function formatClock(unixSeconds: number, utc = false): string {
   const time = new Date(unixSeconds * 1000).toLocaleTimeString('en-GB', {

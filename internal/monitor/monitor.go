@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"maps"
 	"sync"
 	"time"
 
@@ -53,12 +54,19 @@ type Monitor struct {
 
 	mu     sync.Mutex
 	source Source
-	// shortcut: highest server count seen; a node removed for good keeps
+	// shortcut: every server ever seen, by name; one removed for good keeps
 	// results partial until reconnect. Use cluster membership once we track it.
-	expected int
+	known map[string]ServerInfo
 }
 
-func New(nc *nats.Conn) *Monitor { return &Monitor{nc: nc} }
+func New(nc *nats.Conn) *Monitor { return &Monitor{nc: nc, known: map[string]ServerInfo{}} }
+
+// Known returns every server that has answered since connecting.
+func (m *Monitor) Known() map[string]ServerInfo {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return maps.Clone(m.known)
+}
 
 // Source reports which data source this connection can use; checked once.
 func (m *Monitor) Source() Source {
@@ -141,9 +149,11 @@ func (m *Monitor) PingWith(kind string, opts any) (*Result, error) {
 	}
 
 	m.mu.Lock()
-	res.Partial = len(res.Replies) < m.expected
-	m.expected = max(m.expected, len(res.Replies))
-	res.Expected = m.expected
+	for _, r := range res.Replies {
+		m.known[r.Server.Name] = r.Server
+	}
+	res.Partial = len(res.Replies) < len(m.known)
+	res.Expected = len(m.known)
 	m.mu.Unlock()
 	return res, nil
 }
