@@ -10,6 +10,7 @@ import {
 } from '@/features/connection/useNATS';
 import { formatRTT, formatTimestamp } from '@/lib/utils';
 import { ConnectionsTable } from './ConnectionsTable';
+import { OpenFindings } from './OpenFindings';
 import { OverviewStats } from './OverviewStats';
 import { PartialBanner } from './PartialBanner';
 import { TrafficCharts } from './TrafficCharts';
@@ -81,6 +82,7 @@ export function DashboardPage() {
     <div className="space-y-4 p-4 sm:p-6">
       <PartialBanner />
       <OverviewStats />
+      <OpenFindings />
       <TrafficCharts />
 
       {info && (

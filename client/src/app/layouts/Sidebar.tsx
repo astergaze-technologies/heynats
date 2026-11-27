@@ -3,6 +3,7 @@ import {
   ChevronLeft,
   Database,
   Headphones,
+  HeartPulse,
   LayoutDashboard,
   Send,
   Server,
@@ -67,6 +68,12 @@ const Sidebar = () => {
       path: '/dashboard',
       icon: <LayoutDashboard className="h-5 w-5" />,
       exact: true,
+    },
+    {
+      name: 'Health',
+      path: '/dashboard/health',
+      icon: <HeartPulse className="h-5 w-5" />,
+      exact: false,
     },
     {
       name: 'Servers',

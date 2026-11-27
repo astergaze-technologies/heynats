@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/astergaze-solutions/heynats/internal/diagnose"
 	"github.com/astergaze-solutions/heynats/internal/metrics"
 	"github.com/astergaze-solutions/heynats/internal/monitor"
 	"github.com/astergaze-solutions/heynats/internal/util"
@@ -23,13 +24,14 @@ type NATSCredential struct {
 	JetStream *jetstream.JetStream
 	Monitor   *monitor.Monitor
 	Metrics   *metrics.Sampler // set by the connection store for sessions
-	Host      string           `json:"host"`
-	Port      string           `json:"port"`
-	Username  string           `json:"username"`
-	Password  string           `json:"password"`
-	Token     string           `json:"-"`
-	NKeySeed  string           `json:"-"`
-	Creds     string           `json:"-"`
+	Diagnose  *diagnose.Diagnoser
+	Host      string `json:"host"`
+	Port      string `json:"port"`
+	Username  string `json:"username"`
+	Password  string `json:"password"`
+	Token     string `json:"-"`
+	NKeySeed  string `json:"-"`
+	Creds     string `json:"-"`
 }
 
 type ConnectionRequest struct {
@@ -192,6 +194,9 @@ func (nc *NATSCredential) Disconnect() {
 	// After Close, so an in-flight sample fails fast instead of delaying this.
 	if nc.Metrics != nil {
 		nc.Metrics.Stop()
+	}
+	if nc.Diagnose != nil {
+		nc.Diagnose.Stop()
 	}
 }
 

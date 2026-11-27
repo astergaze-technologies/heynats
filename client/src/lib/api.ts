@@ -163,6 +163,29 @@ export type ServerKind =
   | 'CONNZ'
   | 'ACCOUNTZ';
 
+export type Severity = 'critical' | 'warning' | 'info';
+
+export interface Finding {
+  rule_id: string;
+  severity: Severity;
+  resource: string;
+  title: string;
+  detail: string;
+  evidence: { label: string; value: string; source: string }[];
+  fixes?: { label: string; link?: string; cli?: string }[];
+  first_seen: string;
+  last_seen: string;
+}
+
+export interface DiagnosticsReport {
+  verdict: 'healthy' | 'degraded' | 'critical';
+  checked_at: string;
+  source: DataSource;
+  servers: { name: string; responding: boolean; health?: string }[];
+  findings: Finding[];
+  rules: { id: string; doc: string; available: boolean; reason?: string }[];
+}
+
 export interface AccountInfo {
   account_information: AccountInformation;
   connection_limits: ConnectionLimits;
@@ -249,6 +272,9 @@ export const natsApi = {
   getJetStream: (): Promise<JetStreamSummary> => apiRequest('/nats/jetstream'),
 
   getServers: (): Promise<ServerList> => apiRequest('/nats/servers'),
+
+  getDiagnostics: (): Promise<DiagnosticsReport> =>
+    apiRequest('/nats/diagnostics'),
 
   getServerRaw: (id: string, kind: ServerKind): Promise<any> =>
     apiRequest(`/nats/servers/${encodeURIComponent(id)}/raw/${kind}`),

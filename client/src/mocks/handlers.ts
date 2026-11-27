@@ -1,6 +1,7 @@
 import { HttpResponse, http } from 'msw';
 import account from './fixtures/account.json';
 import capabilities from './fixtures/capabilities.json';
+import diagnostics from './fixtures/diagnostics.json';
 import info from './fixtures/info.json';
 import jetstream from './fixtures/jetstream.json';
 import kvBuckets from './fixtures/kv-buckets.json';
@@ -34,6 +35,7 @@ export const handlers = [
   http.get('/api/nats/metrics', () => HttpResponse.json(metrics)),
   http.get('/api/nats/jetstream', () => HttpResponse.json(jetstream)),
   http.get('/api/nats/servers', () => HttpResponse.json(servers)),
+  http.get('/api/nats/diagnostics', () => HttpResponse.json(diagnostics)),
   http.get('/api/nats/servers/:id/raw/:kind', ({ params }) =>
     HttpResponse.json(
       ({ VARZ: varz, ROUTEZ: routez } as Record<string, unknown>)[

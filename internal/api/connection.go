@@ -6,6 +6,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/astergaze-solutions/heynats/internal/diagnose"
 	"github.com/astergaze-solutions/heynats/internal/metrics"
 	"github.com/astergaze-solutions/heynats/internal/pkg"
 )
@@ -149,7 +150,8 @@ func (n *NatsConnectionStore) GetOrReconnect(id string) (*pkg.NATSCredential, bo
 	return newConn, true, nil
 }
 
-// startMetrics begins sampling for a stored session, keeping prev's history.
+// startMetrics begins sampling and health checks for a stored session,
+// keeping prev's metric history.
 func (n *NatsConnectionStore) startMetrics(conn, prev *pkg.NATSCredential) {
 	if n.metrics == 0 || conn == nil || conn.Conn == nil {
 		return
@@ -159,6 +161,7 @@ func (n *NatsConnectionStore) startMetrics(conn, prev *pkg.NATSCredential) {
 		keep = prev.Metrics
 	}
 	conn.Metrics = metrics.Start(conn.Conn, conn.Monitor, n.metrics, keep)
+	conn.Diagnose = diagnose.Start(conn.Monitor, n.metrics)
 }
 
 func closeConn(conn *pkg.NATSCredential) {

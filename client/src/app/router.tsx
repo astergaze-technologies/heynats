@@ -43,6 +43,11 @@ export const router = createBrowserRouter([
             ),
           },
           {
+            path: 'health',
+            handle: { title: 'Health' } satisfies RouteHandle,
+            ...page(() => import('@/features/health/HealthPage'), 'HealthPage'),
+          },
+          {
             path: 'servers',
             handle: { title: 'Servers' } satisfies RouteHandle,
             ...page(
