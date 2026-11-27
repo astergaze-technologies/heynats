@@ -1,0 +1,56 @@
+{
+  "partial": false,
+  "expected": 3,
+  "nodes": [
+    {
+      "id": "n1",
+      "kind": "server",
+      "label": "n1",
+      "cluster": "test",
+      "responding": true,
+      "version": "2.15.0"
+    },
+    {
+      "id": "n2",
+      "kind": "server",
+      "label": "n2",
+      "cluster": "test",
+      "responding": true,
+      "version": "2.15.0"
+    },
+    {
+      "id": "n3",
+      "kind": "server",
+      "label": "n3",
+      "cluster": "test",
+      "responding": true,
+      "version": "2.15.0"
+    }
+  ],
+  "edges": [
+    {
+      "from": "n1",
+      "to": "n2",
+      "kind": "route",
+      "links": 4,
+      "in_msgs": 13,
+      "out_msgs": 16
+    },
+    {
+      "from": "n1",
+      "to": "n3",
+      "kind": "route",
+      "links": 4,
+      "in_msgs": 13,
+      "out_msgs": 16
+    },
+    {
+      "from": "n2",
+      "to": "n3",
+      "kind": "route",
+      "links": 4,
+      "in_msgs": 2,
+      "out_msgs": 2
+    }
+  ]
+}

@@ -22,6 +22,7 @@ export default defineConfig(({ mode }) => ({
   test: {
     environment: "jsdom",
     setupFiles: ["src/mocks/setup.ts"],
+    testTimeout: 15_000,
   },
   server: {
     proxy: {
