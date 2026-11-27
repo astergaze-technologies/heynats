@@ -6,6 +6,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/astergaze-solutions/heynats/internal/metrics"
 	"github.com/astergaze-solutions/heynats/internal/pkg"
 )
 
@@ -18,6 +19,8 @@ type ConnectionInfo struct {
 type ConnectionStoreConfig struct {
 	IdleTimeout   time.Duration // How long to keep idle connections
 	CheckInterval time.Duration // How often to check for idle connections
+	// MetricsInterval is how often each session samples metrics; 0 = off.
+	MetricsInterval time.Duration
 }
 
 type NatsConnectionStore struct {
@@ -25,6 +28,7 @@ type NatsConnectionStore struct {
 	mutex         sync.RWMutex
 	idleTimeout   time.Duration
 	checkInterval time.Duration
+	metrics       time.Duration
 	ctx           context.Context
 	cancel        context.CancelFunc
 }
@@ -42,6 +46,7 @@ func NewNatsConnectionWithConfig(config ConnectionStoreConfig) *NatsConnectionSt
 		nastsConns:    make(map[string]*ConnectionInfo),
 		idleTimeout:   config.IdleTimeout,
 		checkInterval: config.CheckInterval,
+		metrics:       config.MetricsInterval,
 		ctx:           ctx,
 		cancel:        cancel,
 	}
@@ -57,6 +62,7 @@ func NewNatsConnectionWithConfig(config ConnectionStoreConfig) *NatsConnectionSt
 
 // AddConnection adds a new connection with activity tracking
 func (n *NatsConnectionStore) AddConnection(id string, conn *pkg.NATSCredential, config *pkg.ConnectionRequest) {
+	n.startMetrics(conn, nil)
 	n.mutex.Lock()
 	defer n.mutex.Unlock()
 
@@ -136,10 +142,23 @@ func (n *NatsConnectionStore) GetOrReconnect(id string) (*pkg.NATSCredential, bo
 		return nil, false, err
 	}
 
+	n.startMetrics(newConn, old)
 	closeConn(old)
 	current.Connection = newConn
 	log.Printf("Successfully reconnected to NATS server for connection %s", id)
 	return newConn, true, nil
+}
+
+// startMetrics begins sampling for a stored session, keeping prev's history.
+func (n *NatsConnectionStore) startMetrics(conn, prev *pkg.NATSCredential) {
+	if n.metrics == 0 || conn == nil || conn.Conn == nil {
+		return
+	}
+	var keep *metrics.Sampler
+	if prev != nil {
+		keep = prev.Metrics
+	}
+	conn.Metrics = metrics.Start(conn.Conn, conn.Monitor, n.metrics, keep)
 }
 
 func closeConn(conn *pkg.NATSCredential) {

@@ -3,6 +3,7 @@ package config
 import (
 	"log/slog"
 	"testing"
+	"time"
 )
 
 func envOf(vars map[string]string) func(string) string {
@@ -16,14 +17,17 @@ func TestLoad(t *testing.T) {
 		env  map[string]string
 		want Config
 	}{
-		{"defaults", nil, nil, Config{":5000", slog.LevelInfo, "text"}},
+		{"defaults", nil, nil, Config{":5000", slog.LevelInfo, "text", 5 * time.Second}},
 		{"env", nil, map[string]string{
-			"HEYNATS_HTTP_ADDR":  ":8080",
-			"HEYNATS_LOG_LEVEL":  "debug",
-			"HEYNATS_LOG_FORMAT": "json",
-		}, Config{":8080", slog.LevelDebug, "json"}},
+			"HEYNATS_HTTP_ADDR":        ":8080",
+			"HEYNATS_LOG_LEVEL":        "debug",
+			"HEYNATS_LOG_FORMAT":       "json",
+			"HEYNATS_METRICS_INTERVAL": "10s",
+		}, Config{":8080", slog.LevelDebug, "json", 10 * time.Second}},
+		{"metrics off", nil, map[string]string{"HEYNATS_METRICS_ENABLED": "false"},
+			Config{":5000", slog.LevelInfo, "text", 0}},
 		{"flag beats env", []string{"-addr", ":9090"}, map[string]string{"HEYNATS_HTTP_ADDR": ":8080"},
-			Config{":9090", slog.LevelInfo, "text"}},
+			Config{":9090", slog.LevelInfo, "text", 5 * time.Second}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -39,6 +43,8 @@ func TestLoadRejectsInvalidValues(t *testing.T) {
 	for _, env := range []map[string]string{
 		{"HEYNATS_LOG_LEVEL": "loud"},
 		{"HEYNATS_LOG_FORMAT": "xml"},
+		{"HEYNATS_METRICS_INTERVAL": "100ms"},
+		{"HEYNATS_METRICS_ENABLED": "maybe"},
 	} {
 		if _, err := Load(nil, envOf(env)); err == nil {
 			t.Errorf("Load(%v) accepted invalid value", env)

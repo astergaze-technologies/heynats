@@ -77,10 +77,19 @@ func (m *Monitor) Source() Source {
 // Ping asks every server for kind (VARZ, CONNZ, STATZ, ...) and collects the
 // replies until 300ms pass without one, or 2s in total. Fewer replies than
 // the most ever seen marks the result partial.
-func (m *Monitor) Ping(kind string) (*Result, error) {
+func (m *Monitor) Ping(kind string) (*Result, error) { return m.PingWith(kind, nil) }
+
+// PingWith is Ping with request options, e.g. {"accounts": true} for JSZ.
+func (m *Monitor) PingWith(kind string, opts any) (*Result, error) {
 	src := m.Source()
 	var subject string
 	var body []byte
+	if opts != nil {
+		var err error
+		if body, err = json.Marshal(opts); err != nil {
+			return nil, err
+		}
+	}
 	switch {
 	case src == Account:
 		subject = "$SYS.REQ.ACCOUNT.PING." + kind

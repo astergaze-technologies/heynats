@@ -175,6 +175,8 @@ func (e *HeyNats) RegisterRoutes() {
 		c.JSON(http.StatusOK, caps)
 	})
 
+	api.GET("/metrics", e.middleware.RequireConnection(), getMetrics)
+
 	api.GET("/account", e.middleware.RequireConnection(), func(c *gin.Context) {
 		natsConn, exists := c.Get(NatsConnectionKey)
 		if !exists {
