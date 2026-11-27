@@ -15,7 +15,11 @@ vi.mock('uplot', () => ({
 }));
 vi.mock('uplot/dist/uPlot.min.css', () => ({}));
 
-const data = fixture as MetricsWindow;
+// History started 10 minutes ago, inside the 1h range, whenever the test runs.
+const data = {
+  ...(fixture as MetricsWindow),
+  history_since: new Date(Date.now() - 10 * 60_000).toISOString(),
+};
 const chart = (d?: MetricsWindow) =>
   render(
     <TimeSeriesChart

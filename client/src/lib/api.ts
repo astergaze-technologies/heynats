@@ -236,6 +236,69 @@ export interface ConnDetail extends Conn {
 
 export type ConnState = 'open' | 'closed' | 'slow';
 
+/** One account summed over all servers; limits are -1 when unknown or unlimited. */
+export interface AccountRow {
+  name: string;
+  system: boolean;
+  connections: number;
+  leafnodes: number;
+  subscriptions: number;
+  msgs_sent: number;
+  msgs_received: number;
+  bytes_sent: number;
+  bytes_received: number;
+  slow_consumers: number;
+  jetstream: boolean;
+  js_memory: number;
+  js_storage: number;
+  js_max_memory: number;
+  js_max_storage: number;
+}
+
+export interface AccountList {
+  source: DataSource;
+  partial: boolean;
+  servers: number;
+  expected: number;
+  accounts: AccountRow[];
+}
+
+export interface AccountImport {
+  name?: string;
+  subject: string;
+  account: string;
+  type: 'stream' | 'service';
+  local_subject?: string;
+  share?: boolean;
+  invalid?: boolean;
+}
+
+export interface AccountExport {
+  name?: string;
+  subject: string;
+  type: 'stream' | 'service';
+  token_req?: boolean;
+  approved_accounts?: string[];
+  description?: string;
+}
+
+export interface AccountDetail {
+  name: string;
+  update_time?: string;
+  detail: {
+    account_name: string;
+    jetstream_enabled: boolean;
+    exports?: AccountExport[];
+    imports?: AccountImport[];
+    mappings?: Record<
+      string,
+      { subject: string; weight: number; cluster?: string }[]
+    >;
+    decoded_jwt?: unknown;
+    [key: string]: unknown;
+  };
+}
+
 export interface AccountInfo {
   account_information: AccountInformation;
   connection_limits: ConnectionLimits;
@@ -322,6 +385,11 @@ export const natsApi = {
   getJetStream: (): Promise<JetStreamSummary> => apiRequest('/nats/jetstream'),
 
   getServers: (): Promise<ServerList> => apiRequest('/nats/servers'),
+
+  getAccounts: (): Promise<AccountList> => apiRequest('/nats/accounts'),
+
+  getAccount: (name: string): Promise<AccountDetail> =>
+    apiRequest(`/nats/accounts/${encodeURIComponent(name)}`),
 
   getDiagnostics: (): Promise<DiagnosticsReport> =>
     apiRequest('/nats/diagnostics'),

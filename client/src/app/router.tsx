@@ -56,6 +56,25 @@ export const router = createBrowserRouter([
             ),
           },
           {
+            path: 'accounts',
+            handle: { title: 'Accounts' } satisfies RouteHandle,
+            ...page(
+              () => import('@/features/accounts/AccountsPage'),
+              'AccountsPage'
+            ),
+          },
+          {
+            path: 'accounts/:accountName',
+            handle: {
+              title: (p) => p.accountName ?? '',
+              parent: { label: 'Accounts', to: '/dashboard/accounts' },
+            } satisfies RouteHandle,
+            ...page(
+              () => import('@/features/accounts/AccountDetailPage'),
+              'AccountDetailPage'
+            ),
+          },
+          {
             path: 'servers',
             handle: { title: 'Servers' } satisfies RouteHandle,
             ...page(

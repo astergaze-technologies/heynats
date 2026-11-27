@@ -1,5 +1,8 @@
 import { HttpResponse, http } from 'msw';
 import account from './fixtures/account.json';
+import accountApp from './fixtures/account-app.json';
+import accountUser from './fixtures/account-user.json';
+import accounts from './fixtures/accounts.json';
 import capabilities from './fixtures/capabilities.json';
 import detail from './fixtures/connection-detail.json';
 import connections from './fixtures/connections.json';
@@ -38,6 +41,14 @@ export const handlers = [
   http.get('/api/nats/metrics', () => HttpResponse.json(metrics)),
   http.get('/api/nats/jetstream', () => HttpResponse.json(jetstream)),
   http.get('/api/nats/servers', () => HttpResponse.json(servers)),
+  http.get('/api/nats/accounts', () => HttpResponse.json(accounts)),
+  http.get('/api/nats/accounts/:name', ({ params }) =>
+    params.name === 'USER'
+      ? HttpResponse.json(accountUser)
+      : params.name === 'APP'
+        ? HttpResponse.json(accountApp)
+        : HttpResponse.json({ error: 'not found' }, { status: 404 })
+  ),
   http.get('/api/nats/diagnostics', () => HttpResponse.json(diagnostics)),
   http.get('/api/nats/connections', ({ request }) =>
     HttpResponse.json(
