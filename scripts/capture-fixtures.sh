@@ -24,5 +24,7 @@ get account account
 get capabilities capabilities
 get streams streams
 get kv/buckets kv-buckets
+# Needs a minute of sampling and some traffic to be worth keeping.
+get "metrics?series=msgs_in,msgs_out&range=5m" metrics
 
 curl -sf -b "$JAR" -H "Origin: $APP" -X POST "$APP/api/nats/disconnect" >/dev/null

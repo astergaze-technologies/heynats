@@ -1,15 +1,33 @@
-import { Database, MessageSquare, Users, Zap } from 'lucide-react';
+import {
+  ArrowDown,
+  ArrowUp,
+  Database,
+  MessageSquare,
+  Users,
+  Zap,
+} from 'lucide-react';
 import type { ReactNode } from 'react';
-import { formatBytes } from '@/lib/utils';
+import { Sparkline } from '@/components/charts/Sparkline';
+import { cn, formatBytes } from '@/lib/utils';
 
 interface StatsCardProps {
   title: string;
   value: string | number;
   subtitle?: string;
   icon?: ReactNode;
+  /** Change vs a named period, e.g. { text: "+12% vs 1h ago", up: true, good: true }. */
+  delta?: { text: string; up: boolean; good: boolean };
+  trend?: (number | null)[];
 }
 
-export function StatsCard({ title, value, subtitle, icon }: StatsCardProps) {
+export function StatsCard({
+  title,
+  value,
+  subtitle,
+  icon,
+  delta,
+  trend,
+}: StatsCardProps) {
   return (
     <div className="rounded-lg border bg-card p-4">
       <div className="flex items-center justify-between gap-2 text-muted-foreground">
@@ -23,10 +41,30 @@ export function StatsCard({ title, value, subtitle, icon }: StatsCardProps) {
       <p className="mt-1.5 truncate text-2xl font-semibold tracking-tight">
         {typeof value === 'number' ? value.toLocaleString() : value}
       </p>
+      {delta && (
+        <p
+          className={cn(
+            'mt-0.5 flex items-center gap-1 text-xs',
+            delta.good ? 'text-success' : 'text-destructive'
+          )}
+        >
+          {delta.up ? (
+            <ArrowUp className="size-3" aria-hidden="true" />
+          ) : (
+            <ArrowDown className="size-3" aria-hidden="true" />
+          )}
+          {delta.text}
+        </p>
+      )}
       {subtitle && (
         <p className="mt-0.5 truncate text-xs text-muted-foreground">
           {subtitle}
         </p>
+      )}
+      {trend && (
+        <div className="mt-2">
+          <Sparkline values={trend} />
+        </div>
       )}
     </div>
   );

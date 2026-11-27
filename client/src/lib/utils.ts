@@ -9,13 +9,7 @@ export function formatTTL(ttl: string): string {
   return !ttl || ttl === '0s' || ttl === '0' ? 'None' : ttl;
 }
 
-export function formatBytes(bytes: number): string {
-  if (bytes === 0) return '0 B';
-  const k = 1024;
-  const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return Number.parseFloat((bytes / k ** i).toFixed(2)) + ' ' + sizes[i];
-}
+export { formatBytes } from './format';
 
 export function formatDuration(duration: string): string {
   if (!duration || duration === '0s') return 'Just now';

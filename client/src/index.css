@@ -35,6 +35,18 @@
   --success-foreground: oklch(100% 0 0);
   --warning: oklch(47.3% 0.137 46.201); /* amber-800 */
   --warning-foreground: oklch(100% 0 0);
+
+  /* Chart series, in this order only (never cycled). Validated for colour-blind
+     separation on --card; aqua, yellow and magenta are under 3:1 here, so every
+     chart also has a legend and a table view. */
+  --chart-1: #2a78d6; /* blue */
+  --chart-2: #eb6834; /* orange */
+  --chart-3: #1baf7a; /* aqua */
+  --chart-4: #eda100; /* yellow */
+  --chart-5: #e87ba4; /* magenta */
+  --chart-6: #008300; /* green */
+  --chart-7: #6250d6; /* violet */
+  --chart-8: #e34948; /* red */
 }
 
 .dark {
@@ -62,6 +74,16 @@
   --warning: oklch(82.8% 0.189 84.429); /* amber-400 */
   --warning-foreground: oklch(12.9% 0.042 264.695);
 
+  /* Same hues stepped for the dark card; all >= 3:1. */
+  --chart-1: #3987e5;
+  --chart-2: #d95926;
+  --chart-3: #199e70;
+  --chart-4: #c98500;
+  --chart-5: #d55181;
+  --chart-6: #0ca30c;
+  --chart-7: #9085e9;
+  --chart-8: #e66767;
+
   color-scheme: dark;
 }
 
@@ -87,6 +109,14 @@
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
   --color-destructive: var(--destructive);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-chart-6: var(--chart-6);
+  --color-chart-7: var(--chart-7);
+  --color-chart-8: var(--chart-8);
   --color-destructive-foreground: var(--destructive-foreground);
   --color-success: var(--success);
   --color-success-foreground: var(--success-foreground);
