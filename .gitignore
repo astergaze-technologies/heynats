@@ -27,3 +27,5 @@ dist-ssr
 bin
 nats_data
 tmp
+# Go module cache created when an editor infers GOPATH from client/src
+client/pkg
