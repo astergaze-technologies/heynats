@@ -95,6 +95,7 @@ export type FeatureName =
   | 'servers'
   | 'connections.all_accounts'
   | 'connections.kick'
+  | 'consumers.pause'
   | 'trace';
 
 export interface Capabilities {
@@ -172,7 +173,13 @@ export interface Finding {
   title: string;
   detail: string;
   evidence: { label: string; value: string; source: string }[];
-  fixes?: { label: string; link?: string; cli?: string }[];
+  fixes?: {
+    label: string;
+    link?: string;
+    cli?: string;
+    action?: 'consumer.resume';
+    params?: Record<string, string>;
+  }[];
   first_seen: string;
   last_seen: string;
 }
@@ -354,6 +361,11 @@ export interface ConsumerHealth {
   pending: number;
   ack_pending: number;
   redelivered: number;
+  deliver_subject?: string;
+  push_bound?: boolean;
+  waiting: number;
+  max_ack_pending: number;
+  paused?: boolean;
 }
 
 export interface JetStreamHealth {
@@ -463,6 +475,15 @@ export const natsApi = {
 
   getDiagnostics: (): Promise<DiagnosticsReport> =>
     apiRequest('/nats/diagnostics'),
+
+  resumeConsumer: (
+    stream: string,
+    consumer: string
+  ): Promise<{ resumed: boolean }> =>
+    apiRequest(
+      `/nats/streams/consumers/${encodeURIComponent(stream)}/${encodeURIComponent(consumer)}/resume`,
+      { method: 'POST' }
+    ),
 
   getConnections: (params: Record<string, string>): Promise<ConnPage> =>
     apiRequest(`/nats/connections?${new URLSearchParams(params)}`),

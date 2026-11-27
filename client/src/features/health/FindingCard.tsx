@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import type { Finding, Severity } from '@/lib/api';
 import { cn, formatTimestamp } from '@/lib/utils';
+import { FixAction } from './FixAction';
 
 export const SEVERITY: Record<
   Severity,
@@ -90,7 +91,9 @@ export function FindingCard({ finding: f }: { finding: Finding }) {
       {f.fixes && f.fixes.length > 0 && (
         <div className="mt-3 flex flex-wrap items-center gap-2 text-sm">
           {f.fixes.map((x) =>
-            x.link ? (
+            x.action ? (
+              <FixAction key={x.label} fix={x} />
+            ) : x.link ? (
               <Link
                 key={x.label}
                 to={x.link}

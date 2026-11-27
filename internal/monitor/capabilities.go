@@ -32,6 +32,7 @@ var requirements = map[string]struct {
 	"connections.all_accounts": {system: true},
 	"connections.kick":         {system: true, minVersion: [3]int{2, 10, 0}}, // KICK added in 2.10.0
 	"trace":                    {minVersion: [3]int{2, 11, 0}},
+	"consumers.pause":          {minVersion: [3]int{2, 11, 0}}, // consumer pause/resume added in 2.11
 }
 
 func (m *Monitor) Capabilities() (*Capabilities, error) {

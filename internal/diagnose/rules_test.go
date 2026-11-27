@@ -60,6 +60,21 @@ func TestRules(t *testing.T) {
 		{"js.consumer_lag_growing", func(s *Snapshot) {
 			s.Consumers = []Consumer{{Name: "APP/ORDERS/billing", Pending: 900}}
 		}, "", ""},
+		{"consumer.paused", func(s *Snapshot) { s.Consumers = []Consumer{{Name: "c", Paused: true}} }, Warning, "consumer:c"},
+		{"consumer.ack_pending_full", func(s *Snapshot) { s.Consumers = []Consumer{{Name: "c", AckPending: 5, MaxAckPending: 5}} }, Warning, "consumer:c"},
+		{"consumer.ack_pending_full", func(s *Snapshot) { s.Consumers = []Consumer{{Name: "c", AckPending: 4, MaxAckPending: 5}} }, "", ""},
+		{"consumer.high_redelivery", func(s *Snapshot) { s.Consumers = []Consumer{{Name: "c", Deliveries: 100, Redelivery: 0.25}} }, Warning, "consumer:c"},
+		{"consumer.high_redelivery", func(s *Snapshot) { s.Consumers = []Consumer{{Name: "c", Deliveries: 10, Redelivery: 0.9}} }, "", ""}, // too few to judge
+		{"consumer.no_interest", func(s *Snapshot) { s.Consumers = []Consumer{{Name: "c", DeliverSubject: "d.x"}} }, Warning, "consumer:c"},
+		{"consumer.no_interest", func(s *Snapshot) { s.Consumers = []Consumer{{Name: "c", DeliverSubject: "d.x", PushBound: true}} }, "", ""},
+		{"consumer.nobody_pulling", func(s *Snapshot) { s.Consumers = []Consumer{{Name: "c", Pending: 3, IdleTooLong: true}} }, Warning, "consumer:c"},
+		{"consumer.nobody_pulling", func(s *Snapshot) { s.Consumers = []Consumer{{Name: "c", Pending: 3, IdleTooLong: true, Waiting: 1}} }, "", ""},
+		{"consumer.filter_matches_nothing", func(s *Snapshot) {
+			s.Consumers = []Consumer{{Name: "c", Filters: []string{"legacy.>"}, StreamSubjects: []string{"orders.>"}}}
+		}, Warning, "consumer:c"},
+		{"consumer.filter_matches_nothing", func(s *Snapshot) {
+			s.Consumers = []Consumer{{Name: "c", Filters: []string{"orders.eu"}, StreamSubjects: []string{"orders.>"}}}
+		}, "", ""},
 	}
 	for _, tt := range tests {
 		snap := healthy()

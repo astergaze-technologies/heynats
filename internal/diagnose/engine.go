@@ -38,6 +38,21 @@ type Report struct {
 	Rules     []RuleInfo     `json:"rules"`
 }
 
+// windows are how long a condition must last before a rule fires.
+type windows struct {
+	lagFor       time.Duration // replica behind its leader
+	growFor      time.Duration // consumer pending only going up
+	redeliverFor time.Duration // span the redelivery share is measured over
+	idleFor      time.Duration // pull consumer with nobody pulling
+}
+
+var defaultWindows = windows{lagFor: time.Minute, growFor: 15 * time.Minute, redeliverFor: 15 * time.Minute, idleFor: 5 * time.Minute}
+
+type deliveryPoint struct {
+	at                time.Time
+	delivered, stream uint64 // all deliveries; highest stream sequence delivered
+}
+
 type pendingPoint struct {
 	at    time.Time
 	count uint64
@@ -53,30 +68,30 @@ type slowPoint struct {
 type Diagnoser struct {
 	mon *monitor.Monitor
 
-	checkMu sync.Mutex // one check at a time
-	mu      sync.Mutex
-	missed  map[string]int
-	slow    map[string][]slowPoint
-	open    map[string]Finding
-	report  *Report
-	// How long lag must last, and how long pending must only grow, to count.
-	lagFor, growFor time.Duration
-	lagSince        map[string]time.Time
-	pending         map[string][]pendingPoint
+	checkMu   sync.Mutex // one check at a time
+	mu        sync.Mutex
+	missed    map[string]int
+	slow      map[string][]slowPoint
+	open      map[string]Finding
+	report    *Report
+	w         windows
+	lagSince  map[string]time.Time
+	pending   map[string][]pendingPoint
+	delivered map[string][]deliveryPoint
 
 	stop, done chan struct{}
 }
 
 func Start(mon *monitor.Monitor, interval time.Duration) *Diagnoser {
-	return start(mon, interval, time.Minute, 15*time.Minute)
+	return start(mon, interval, defaultWindows)
 }
 
-// start lets tests shorten the lag and growth windows.
-func start(mon *monitor.Monitor, interval, lagFor, growFor time.Duration) *Diagnoser {
+// start lets tests shorten the windows.
+func start(mon *monitor.Monitor, interval time.Duration, w windows) *Diagnoser {
 	d := &Diagnoser{
 		mon: mon, missed: map[string]int{}, slow: map[string][]slowPoint{}, open: map[string]Finding{},
-		lagFor: lagFor, growFor: growFor,
-		lagSince: map[string]time.Time{}, pending: map[string][]pendingPoint{},
+		w:        w,
+		lagSince: map[string]time.Time{}, pending: map[string][]pendingPoint{}, delivered: map[string][]deliveryPoint{},
 		stop: make(chan struct{}), done: make(chan struct{}),
 	}
 	go func() {
@@ -213,7 +228,9 @@ func (d *Diagnoser) addJetStream(snap *Snapshot, now time.Time) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	lagging := map[string]bool{}
+	subjects := map[string][]string{}
 	for _, st := range h.Streams {
+		subjects[st.Account+"/"+st.Name] = st.Subjects
 		name := st.Name
 		if st.Account != "" {
 			name = st.Account + "/" + st.Name
@@ -229,7 +246,7 @@ func (d *Diagnoser) addJetStream(snap *Snapshot, now time.Time) {
 				if _, ok := d.lagSince[key]; !ok {
 					d.lagSince[key] = now
 				}
-				if now.Sub(d.lagSince[key]) >= d.lagFor {
+				if now.Sub(d.lagSince[key]) >= d.w.lagFor {
 					s.Lagging = append(s.Lagging, fmt.Sprintf("%s (%d behind)", p.Name, p.Lag))
 				}
 			}
@@ -254,19 +271,49 @@ func (d *Diagnoser) addJetStream(snap *Snapshot, now time.Time) {
 			pts = nil // it caught up a little: start over
 		}
 		pts = append(pts, pendingPoint{now, c.Pending})
-		for len(pts) > 1 && now.Sub(pts[1].at) >= d.growFor {
+		for len(pts) > 1 && now.Sub(pts[1].at) >= d.w.growFor {
 			pts = pts[1:]
 		}
 		d.pending[name] = pts
 		first := pts[0]
-		snap.Consumers = append(snap.Consumers, Consumer{
+		cs := Consumer{
 			Name: name, Pending: c.Pending, Since: first.count,
-			Growing: now.Sub(first.at) >= d.growFor && c.Pending > first.count,
-		})
+			Growing: now.Sub(first.at) >= d.w.growFor && c.Pending > first.count,
+			Stream:  c.Stream, Consumer: c.Name, OwnAccount: h.Source == monitor.Account,
+			Paused: c.Paused, AckPending: c.AckPending, MaxAckPending: c.MaxAckPending, AckWait: c.AckWait,
+			DeliverSubject: c.DeliverSubject, PushBound: c.PushBound, Waiting: c.Waiting,
+			Filters: c.FilterSubjects, StreamSubjects: subjects[c.Account+"/"+c.Stream],
+		}
+		last := c.Created
+		if c.LastActive != nil {
+			last = *c.LastActive
+		}
+		cs.Idle = now.Sub(last)
+		cs.IdleTooLong = cs.Idle >= d.w.idleFor
+
+		// Redeliveries: every delivery bumps the delivered count, only new
+		// messages move the stream sequence. Filtered consumers skip stream
+		// sequences, which only undercounts redeliveries.
+		dps := d.delivered[name]
+		if n := len(dps); n > 0 && c.Delivered < dps[n-1].delivered {
+			dps = nil // consumer recreated
+		}
+		dps = append(dps, deliveryPoint{now, c.Delivered, c.DeliveredStream})
+		for len(dps) > 1 && now.Sub(dps[1].at) >= d.w.redeliverFor {
+			dps = dps[1:]
+		}
+		d.delivered[name] = dps
+		if f := dps[0]; now.Sub(f.at) >= d.w.redeliverFor && c.Delivered > f.delivered {
+			total := c.Delivered - f.delivered
+			fresh := min(c.DeliveredStream-f.stream, total)
+			cs.Deliveries, cs.Redelivery = total, float64(total-fresh)/float64(total)
+		}
+		snap.Consumers = append(snap.Consumers, cs)
 	}
 	for name := range d.pending {
 		if !seen[name] {
 			delete(d.pending, name)
+			delete(d.delivered, name)
 		}
 	}
 }

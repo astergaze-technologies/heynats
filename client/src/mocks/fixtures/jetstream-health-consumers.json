@@ -1,0 +1,88 @@
+{
+  "source": "account",
+  "partial": false,
+  "streams": [
+    {
+      "account": "",
+      "name": "ORDERS",
+      "subjects": [
+        "orders.\u003e"
+      ],
+      "leader": "n2",
+      "replicas": [
+        {
+          "name": "n1",
+          "current": true,
+          "active": 519060458
+        },
+        {
+          "name": "n3",
+          "current": true,
+          "active": 519075625
+        }
+      ],
+      "clustered": true,
+      "messages": 50,
+      "bytes": 2050,
+      "consumers": 2
+    }
+  ],
+  "consumers": [
+    {
+      "account": "",
+      "stream": "ORDERS",
+      "name": "shipping",
+      "leader": "n3",
+      "replicas": [
+        {
+          "name": "n1",
+          "current": true,
+          "active": 301557292
+        },
+        {
+          "name": "n2",
+          "current": true,
+          "active": 305947375
+        }
+      ],
+      "pending": 50,
+      "ack_pending": 0,
+      "redelivered": 0,
+      "waiting": 0,
+      "max_ack_pending": 1000,
+      "ack_wait": 30000000000,
+      "paused": true,
+      "delivered": 0,
+      "delivered_stream": 0,
+      "created": "2026-11-27T13:04:51.345622Z"
+    },
+    {
+      "account": "",
+      "stream": "ORDERS",
+      "name": "billing",
+      "leader": "n3",
+      "replicas": [
+        {
+          "name": "n1",
+          "current": true,
+          "active": 414896416
+        },
+        {
+          "name": "n2",
+          "current": true,
+          "active": 414895750
+        }
+      ],
+      "pending": 45,
+      "ack_pending": 5,
+      "redelivered": 0,
+      "waiting": 0,
+      "max_ack_pending": 5,
+      "ack_wait": 30000000000,
+      "delivered": 5,
+      "delivered_stream": 5,
+      "last_active": "2026-11-27T13:04:51.345912Z",
+      "created": "2026-11-27T13:04:51.24046Z"
+    }
+  ]
+}

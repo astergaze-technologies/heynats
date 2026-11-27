@@ -1,13 +1,17 @@
 package api
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/astergaze-solutions/heynats/internal/pkg"
 	"github.com/gin-gonic/gin"
 	"github.com/nats-io/nats.go"
+	"github.com/nats-io/nats.go/jetstream"
 )
 
 type StreamAPI struct {
@@ -36,6 +40,7 @@ func (e *StreamAPI) RegisterRoutes() {
 	api.GET("/:stream/messages", e.middleware.RequireConnection(), e.GetStreamMessages)
 	api.GET("/:stream/subjects/:subject/subscribe", e.middleware.RequireConnection(), e.SubscribeToStreamSubject)
 	api.GET("/consumers/:stream", e.middleware.RequireConnection(), e.ListConsumers)
+	api.POST("/consumers/:stream/:consumer/resume", e.middleware.RequireConnection(), e.ResumeConsumer)
 	// Generic routes at the end
 	api.GET("/:stream", e.middleware.RequireConnection(), e.GetStreamInfo)
 	api.DELETE("/:stream", e.middleware.RequireConnection(), e.DeleteStream)
@@ -126,6 +131,30 @@ func (e *StreamAPI) ListConsumers(c *gin.Context) {
 		"consumers": consumers,
 		"total":     len(consumers),
 	})
+}
+
+// ResumeConsumer handles POST /streams/consumers/:stream/:consumer/resume:
+// a paused consumer (NATS 2.11+) starts delivering again.
+func (e *StreamAPI) ResumeConsumer(c *gin.Context) {
+	conn, ok := e.GetConnection(c)
+	if !ok {
+		return
+	}
+	if f := conn.Monitor.Feature("consumers.pause"); !f.OK {
+		c.JSON(http.StatusForbidden, gin.H{"error": f.Reason})
+		return
+	}
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
+	defer cancel()
+	if _, err := (*conn.JetStream).ResumeConsumer(ctx, c.Param("stream"), c.Param("consumer")); err != nil {
+		status := http.StatusBadGateway
+		if errors.Is(err, jetstream.ErrConsumerNotFound) || errors.Is(err, jetstream.ErrStreamNotFound) {
+			status = http.StatusNotFound
+		}
+		c.JSON(status, gin.H{"error": "Failed to resume consumer", "details": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"resumed": true})
 }
 
 // CreateStream handles POST /streams endpoint
