@@ -27,8 +27,14 @@ type ServerRow struct {
 	Subscriptions uint32    `json:"subscriptions"`
 	SlowConsumers int64     `json:"slow_consumers"`
 	JetStream     bool      `json:"jetstream"`
-	MsgsIn        *float32  `json:"msgs_in"` // per second, from the sampler
-	MsgsOut       *float32  `json:"msgs_out"`
+	// For diagnostics: limits and JetStream state as this server sees them.
+	MaxConnections  int      `json:"max_connections"`
+	Storage         uint64   `json:"js_storage"`
+	MaxStorage      int64    `json:"js_max_storage"`
+	MetaLeader      string   `json:"js_meta_leader,omitempty"`
+	MetaClusterSize int      `json:"js_meta_cluster_size,omitempty"`
+	MsgsIn          *float32 `json:"msgs_in"` // per second, from the sampler
+	MsgsOut         *float32 `json:"msgs_out"`
 }
 
 type ServerList struct {
@@ -68,14 +74,31 @@ func (m *Monitor) Servers() (*ServerList, error) {
 			Connections   int       `json:"connections"`
 			Subscriptions uint32    `json:"subscriptions"`
 			SlowConsumers int64     `json:"slow_consumers"`
+			MaxConns      int       `json:"max_connections"`
 			JetStream     struct {
-				Config *struct{} `json:"config"`
+				Config *struct {
+					MaxStorage int64 `json:"max_storage"`
+				} `json:"config"`
+				Stats struct {
+					Storage uint64 `json:"storage"`
+				} `json:"stats"`
+				Meta *struct {
+					Leader      string `json:"leader"`
+					ClusterSize int    `json:"cluster_size"`
+				} `json:"meta"`
 			} `json:"jetstream"`
 		}
 		if r.Error == nil && json.Unmarshal(r.Data, &v) == nil {
 			row.Start, row.CPU, row.Mem = v.Start, v.CPU, v.Mem
 			row.Connections, row.Subscriptions, row.SlowConsumers = v.Connections, v.Subscriptions, v.SlowConsumers
 			row.JetStream = v.JetStream.Config != nil
+			row.MaxConnections = v.MaxConns
+			if row.JetStream {
+				row.Storage, row.MaxStorage = v.JetStream.Stats.Storage, v.JetStream.Config.MaxStorage
+			}
+			if m := v.JetStream.Meta; m != nil {
+				row.MetaLeader, row.MetaClusterSize = m.Leader, m.ClusterSize
+			}
 		}
 	}
 	if healthErr == nil {

@@ -1,0 +1,87 @@
+{
+  "verdict": "degraded",
+  "checked_at": "2026-11-27T16:16:22.6486+05:45",
+  "source": "system",
+  "servers": [
+    {
+      "name": "n1",
+      "responding": true,
+      "health": "ok"
+    },
+    {
+      "name": "n2",
+      "responding": true,
+      "health": "ok"
+    },
+    {
+      "name": "n3",
+      "responding": false
+    }
+  ],
+  "findings": [
+    {
+      "rule_id": "server.unreachable",
+      "severity": "warning",
+      "resource": "server:n3",
+      "title": "n3 is not responding",
+      "detail": "n3 answered earlier but missed the last 2 checks. Clients and replicas on it may be failing over.",
+      "evidence": [
+        {
+          "label": "Missed checks",
+          "value": "2",
+          "source": "STATZ/VARZ"
+        },
+        {
+          "label": "Servers not responding",
+          "value": "1 of 3",
+          "source": "STATZ/VARZ"
+        }
+      ],
+      "fixes": [
+        {
+          "label": "List servers from the CLI",
+          "cli": "nats server list"
+        }
+      ],
+      "first_seen": "2026-11-27T16:16:22.6486+05:45",
+      "last_seen": "2026-11-27T16:16:22.6486+05:45"
+    }
+  ],
+  "rules": [
+    {
+      "id": "server.unreachable",
+      "doc": "A server that answered before has missed two checks in a row.",
+      "available": true
+    },
+    {
+      "id": "server.healthz",
+      "doc": "A responding server reports itself unhealthy (for example JetStream not current).",
+      "available": true
+    },
+    {
+      "id": "server.version_mismatch",
+      "doc": "Servers in one cluster run different NATS versions.",
+      "available": true
+    },
+    {
+      "id": "server.slow_consumers",
+      "doc": "The slow-consumer count went up in the last 5 minutes.",
+      "available": true
+    },
+    {
+      "id": "server.connections_near_limit",
+      "doc": "A server has more than 90% of max_connections in use.",
+      "available": true
+    },
+    {
+      "id": "js.meta_no_leader",
+      "doc": "A clustered JetStream server sees no meta leader, so streams can't be created or changed.",
+      "available": true
+    },
+    {
+      "id": "js.storage_near_limit",
+      "doc": "JetStream file storage is over 80% (warning) or 95% (critical) of a server or account limit.",
+      "available": true
+    }
+  ]
+}

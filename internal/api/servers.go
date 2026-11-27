@@ -43,6 +43,16 @@ func listServers(c *gin.Context) {
 	c.JSON(http.StatusOK, list)
 }
 
+// diagnostics serves the latest health check: verdict, servers, findings.
+func diagnostics(c *gin.Context) {
+	conn, _ := GetNatsCredentialFromContext(c)
+	if conn.Diagnose == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "Background checks are turned off (HEYNATS_METRICS_ENABLED=false)"})
+		return
+	}
+	c.JSON(http.StatusOK, conn.Diagnose.Report())
+}
+
 // serverRaw serves one server's monitoring data for one kind, e.g. ROUTEZ.
 func serverRaw(c *gin.Context) {
 	conn, _ := GetNatsCredentialFromContext(c)
