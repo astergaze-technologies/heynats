@@ -186,6 +186,55 @@ export interface DiagnosticsReport {
   rules: { id: string; doc: string; available: boolean; reason?: string }[];
 }
 
+/** A client connection; cid is only unique per server. */
+export interface Conn {
+  server: string;
+  cid: number;
+  name?: string;
+  account?: string;
+  authorized_user?: string;
+  lang?: string;
+  version?: string;
+  ip: string;
+  port: number;
+  start: string;
+  last_activity: string;
+  stop?: string;
+  reason?: string;
+  rtt?: string;
+  uptime: string;
+  idle: string;
+  pending_bytes: number;
+  in_msgs: number;
+  out_msgs: number;
+  in_bytes: number;
+  out_bytes: number;
+  subscriptions: number;
+}
+
+export interface ConnPage {
+  source: DataSource;
+  partial: boolean;
+  servers: number;
+  expected: number;
+  total: number;
+  matched: number;
+  connections: Conn[];
+}
+
+export interface ConnDetail extends Conn {
+  tls_version?: string;
+  subscriptions_list_detail?: {
+    subject: string;
+    qgroup?: string;
+    msgs: number;
+    max?: number;
+    sid: string;
+  }[];
+}
+
+export type ConnState = 'open' | 'closed' | 'slow';
+
 export interface AccountInfo {
   account_information: AccountInformation;
   connection_limits: ConnectionLimits;
@@ -275,6 +324,12 @@ export const natsApi = {
 
   getDiagnostics: (): Promise<DiagnosticsReport> =>
     apiRequest('/nats/diagnostics'),
+
+  getConnections: (params: Record<string, string>): Promise<ConnPage> =>
+    apiRequest(`/nats/connections?${new URLSearchParams(params)}`),
+
+  getConnection: (server: string, cid: number): Promise<ConnDetail> =>
+    apiRequest(`/nats/connections/${encodeURIComponent(server)}/${cid}`),
 
   getServerRaw: (id: string, kind: ServerKind): Promise<any> =>
     apiRequest(`/nats/servers/${encodeURIComponent(id)}/raw/${kind}`),

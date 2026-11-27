@@ -1,15 +1,10 @@
-import { Search, Unplug } from 'lucide-react';
-import { useState } from 'react';
 import { EmptyState, LoadingState } from '@/components/PageStates';
-import { SourceBadge } from '@/components/SourceBadge';
-import { Input } from '@/components/ui/input';
 import {
   useAccountInfo,
   useConnectionStatus,
   useNATSInfo,
 } from '@/features/connection/useNATS';
-import { formatRTT, formatTimestamp } from '@/lib/utils';
-import { ConnectionsTable } from './ConnectionsTable';
+import { formatRTT } from '@/lib/utils';
 import { OpenFindings } from './OpenFindings';
 import { OverviewStats } from './OverviewStats';
 import { PartialBanner } from './PartialBanner';
@@ -39,7 +34,6 @@ function Field({
 }
 
 export function DashboardPage() {
-  const [searchQuery, setSearchQuery] = useState('');
   const { data: status } = useConnectionStatus();
   const {
     data: natsInfo,
@@ -67,16 +61,6 @@ export function DashboardPage() {
   }
 
   const info = accountInfo?.account_information;
-  const connections = accountInfo?.connection_limits?.connections || [];
-
-  const query = searchQuery.trim().toLowerCase();
-  const filteredConnections = connections.filter(
-    (c) =>
-      !query ||
-      [c.name, c.lang, String(c.cid), `${c.ip}:${c.port}`].some((v) =>
-        v?.toLowerCase().includes(query)
-      )
-  );
 
   return (
     <div className="space-y-4 p-4 sm:p-6">
@@ -133,69 +117,6 @@ export function DashboardPage() {
           </dl>
         </section>
       )}
-
-      <section
-        className="rounded-lg border bg-card"
-        aria-labelledby="connections-heading"
-      >
-        <div className="flex flex-wrap items-center gap-3 p-4">
-          <h2 id="connections-heading" className="font-semibold">
-            Client connections
-          </h2>
-          {accountInfo && (
-            <span className="text-sm text-muted-foreground">
-              {query ? `${filteredConnections.length} of ` : ''}
-              {accountInfo.connection_limits.num_connections} · limit{' '}
-              {accountInfo.connection_limits.limit}
-            </span>
-          )}
-          {accountInfo && (
-            <SourceBadge
-              source={accountInfo.connection_limits.source}
-              partial={accountInfo.connection_limits.partial}
-              servers={accountInfo.connection_limits.servers}
-              expected={accountInfo.connection_limits.expected}
-            />
-          )}
-          <span className="ml-auto text-xs text-muted-foreground">
-            Updated{' '}
-            {accountInfo?.connection_limits.now
-              ? formatTimestamp(accountInfo.connection_limits.now)
-              : '—'}
-          </span>
-          <div className="relative w-full sm:w-72">
-            <Search
-              className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
-              aria-hidden="true"
-            />
-            <Input
-              type="search"
-              aria-label="Search connections"
-              placeholder="Name, IP, language or CID…"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9"
-            />
-          </div>
-        </div>
-
-        {filteredConnections.length > 0 ? (
-          <ConnectionsTable connections={filteredConnections} />
-        ) : (
-          <EmptyState
-            className="m-4 mt-0"
-            icon={query ? <Search /> : <Unplug />}
-            title={
-              query
-                ? 'No connections match your search'
-                : 'No client connections'
-            }
-            description={
-              query ? `Nothing matches “${searchQuery}”.` : undefined
-            }
-          />
-        )}
-      </section>
     </div>
   );
 }

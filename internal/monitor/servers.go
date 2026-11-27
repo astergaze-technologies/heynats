@@ -136,7 +136,10 @@ var rawKinds = map[string]bool{
 	"LEAFZ": true, "JSZ": true, "SUBSZ": true, "CONNZ": true, "ACCOUNTZ": true,
 }
 
-var ErrBadRequest = errors.New("bad request")
+var (
+	ErrBadRequest = errors.New("bad request")
+	ErrNotFound   = errors.New("not found")
+)
 
 // ServerRaw asks one server for one kind and returns its data unchanged.
 func (m *Monitor) ServerRaw(id, kind string) (json.RawMessage, error) {

@@ -1,0 +1,30 @@
+{
+  "server": "n2",
+  "cid": 56,
+  "name": "billing-api",
+  "account": "APP",
+  "authorized_user": "admin",
+  "lang": "go",
+  "version": "1.49.0",
+  "ip": "192.168.97.1",
+  "port": 36461,
+  "start": "2026-11-27T10:39:17.300533706Z",
+  "last_activity": "2026-11-27T10:39:17.438407176Z",
+  "rtt": "344µs",
+  "uptime": "2s",
+  "idle": "2s",
+  "pending_bytes": 0,
+  "in_msgs": 0,
+  "out_msgs": 0,
+  "in_bytes": 0,
+  "out_bytes": 0,
+  "subscriptions": 1,
+  "subscriptions_list_detail": [
+    {
+      "subject": "billing.quote",
+      "qgroup": "NATS-RPLY-22",
+      "msgs": 0,
+      "sid": "1"
+    }
+  ]
+}

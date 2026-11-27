@@ -15,6 +15,8 @@ func monitorError(c *gin.Context, what string, err error) {
 		c.JSON(http.StatusForbidden, gin.H{"error": "Requires a system account user"})
 	case errors.Is(err, monitor.ErrBadRequest):
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	case errors.Is(err, monitor.ErrNotFound):
+		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 	default:
 		c.JSON(http.StatusBadGateway, gin.H{"error": "Failed to read " + what, "details": err.Error()})
 	}
