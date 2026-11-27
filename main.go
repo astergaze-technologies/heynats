@@ -16,6 +16,7 @@ import (
 	"github.com/astergaze-solutions/heynats/internal/api"
 	"github.com/astergaze-solutions/heynats/internal/config"
 	"github.com/astergaze-solutions/heynats/internal/infrastructure"
+	"github.com/astergaze-solutions/heynats/internal/metrics"
 	"github.com/gin-gonic/gin"
 )
 
@@ -41,7 +42,15 @@ func main() {
 		os.Exit(1)
 	}
 
-	natsConnections := api.NewNatsConnection()
+	natsConnections := api.NewNatsConnectionWithConfig(api.ConnectionStoreConfig{
+		IdleTimeout:     5 * time.Minute,
+		CheckInterval:   time.Minute,
+		MetricsInterval: cfg.MetricsInterval,
+	})
+	if cfg.MetricsInterval > 0 {
+		slog.Info("metrics sampling on", "interval", cfg.MetricsInterval,
+			"max_mb_per_session_3_servers_500_consumers", metrics.Budget(cfg.MetricsInterval, 3, 3, 500)>>20)
+	}
 	srv := &http.Server{
 		Handler:           newRouter(dist, natsConnections),
 		ReadHeaderTimeout: 10 * time.Second,
