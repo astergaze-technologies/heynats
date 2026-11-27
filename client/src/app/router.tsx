@@ -75,6 +75,14 @@ export const router = createBrowserRouter([
             ),
           },
           {
+            path: 'subjects',
+            handle: { title: 'Subjects' } satisfies RouteHandle,
+            ...page(
+              () => import('@/features/subjects/SubjectsPage'),
+              'SubjectsPage'
+            ),
+          },
+          {
             path: 'topology',
             handle: { title: 'Topology' } satisfies RouteHandle,
             ...page(

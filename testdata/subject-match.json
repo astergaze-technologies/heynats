@@ -1,0 +1,14 @@
+[
+  { "pattern": "orders.*.created", "subject": "orders.eu.created", "match": true },
+  { "pattern": "orders.*.created", "subject": "orders.eu.west.created", "match": false },
+  { "pattern": "orders.>", "subject": "orders.eu.created", "match": true },
+  { "pattern": "orders.>", "subject": "orders", "match": false },
+  { "pattern": ">", "subject": "anything.at.all", "match": true },
+  { "pattern": "*", "subject": "orders", "match": true },
+  { "pattern": "*", "subject": "orders.eu", "match": false },
+  { "pattern": "orders.eu", "subject": "orders.eu", "match": true },
+  { "pattern": "orders.eu", "subject": "orders.us", "match": false },
+  { "pattern": "orders.*", "subject": "orders.eu.created", "match": false },
+  { "pattern": "*.eu.>", "subject": "orders.eu.created", "match": true },
+  { "pattern": "orders.*.>", "subject": "orders.eu", "match": false }
+]

@@ -7,6 +7,8 @@ import (
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/astergaze-solutions/heynats/internal/subject"
 )
 
 type Severity string
@@ -488,7 +490,7 @@ var consumerRules = []Rule{
 			}
 			for _, f := range c.Filters {
 				for _, s := range c.StreamSubjects {
-					if subjectsOverlap(f, s) {
+					if subject.Overlap(f, s) {
 						return nil
 					}
 				}

@@ -18,6 +18,7 @@ import varz from './fixtures/server-varz.json';
 import servers from './fixtures/servers.json';
 import status from './fixtures/status.json';
 import streams from './fixtures/streams.json';
+import subjects from './fixtures/subjects.json';
 import topology from './fixtures/topology.json';
 
 // Captured from a real cluster by scripts/capture-fixtures.sh.
@@ -47,6 +48,7 @@ export const handlers = [
   ),
   http.get('/api/nats/servers', () => HttpResponse.json(servers)),
   http.get('/api/nats/topology', () => HttpResponse.json(topology)),
+  http.get('/api/nats/subjects', () => HttpResponse.json(subjects)),
   http.get('/api/nats/accounts', () => HttpResponse.json(accounts)),
   http.get('/api/nats/accounts/:name', ({ params }) =>
     params.name === 'USER'

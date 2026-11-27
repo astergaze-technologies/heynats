@@ -178,6 +178,15 @@ func (e *HeyNats) RegisterRoutes() {
 	api.GET("/metrics", e.middleware.RequireConnection(), getMetrics)
 	api.GET("/servers", e.middleware.RequireConnection(), listServers)
 	api.GET("/topology", e.middleware.RequireConnection(), topology)
+	api.GET("/subjects", e.middleware.RequireConnection(), func(c *gin.Context) {
+		conn, _ := GetNatsCredentialFromContext(c)
+		m, err := conn.Monitor.Subjects()
+		if err != nil {
+			monitorError(c, "subjects", err)
+			return
+		}
+		c.JSON(http.StatusOK, m)
+	})
 	api.GET("/accounts", e.middleware.RequireConnection(), listAccounts)
 	api.GET("/accounts/:name", e.middleware.RequireConnection(), getAccount)
 	api.GET("/connections", e.middleware.RequireConnection(), listConnections)

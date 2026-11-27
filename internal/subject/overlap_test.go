@@ -1,4 +1,4 @@
-package diagnose
+package subject
 
 import "testing"
 
@@ -16,10 +16,10 @@ func TestSubjectsOverlap(t *testing.T) {
 		{"a.b", "a.b", true},
 		{"a.*", "*.b", true},
 	} {
-		if got := subjectsOverlap(tc.a, tc.b); got != tc.want {
+		if got := Overlap(tc.a, tc.b); got != tc.want {
 			t.Errorf("overlap(%q, %q) = %v, want %v", tc.a, tc.b, got, tc.want)
 		}
-		if got := subjectsOverlap(tc.b, tc.a); got != tc.want {
+		if got := Overlap(tc.b, tc.a); got != tc.want {
 			t.Errorf("overlap(%q, %q) not symmetric", tc.b, tc.a)
 		}
 	}

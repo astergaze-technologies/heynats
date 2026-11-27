@@ -366,6 +366,7 @@ export interface ConsumerHealth {
   waiting: number;
   max_ack_pending: number;
   paused?: boolean;
+  filter_subjects?: string[] | null;
 }
 
 export interface JetStreamHealth {
@@ -374,6 +375,32 @@ export interface JetStreamHealth {
   meta?: { leader: string; cluster_size: number; peers: Peer[] | null };
   streams: StreamHealth[];
   consumers: ConsumerHealth[];
+}
+
+export interface Subscriber {
+  server: string;
+  cid: number;
+  name?: string;
+  account?: string;
+  queue?: string;
+  msgs: number;
+}
+
+export interface StoredStream {
+  account?: string;
+  name: string;
+  subjects: string[] | null;
+  /** Messages per stored subject; own account only. */
+  counts?: Record<string, number>;
+  truncated?: boolean;
+}
+
+export interface SubjectMap {
+  source: DataSource;
+  partial: boolean;
+  listening: Record<string, Subscriber[]>;
+  streams: StoredStream[];
+  hidden_inboxes: number;
 }
 
 export interface AccountInfo {
@@ -469,6 +496,8 @@ export const natsApi = {
   getAccounts: (): Promise<AccountList> => apiRequest('/nats/accounts'),
 
   getTopology: (): Promise<Topology> => apiRequest('/nats/topology'),
+
+  getSubjects: (): Promise<SubjectMap> => apiRequest('/nats/subjects'),
 
   getAccount: (name: string): Promise<AccountDetail> =>
     apiRequest(`/nats/accounts/${encodeURIComponent(name)}`),
