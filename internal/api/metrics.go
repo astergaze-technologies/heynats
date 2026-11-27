@@ -34,7 +34,9 @@ func getMetrics(c *gin.Context) {
 	if js {
 		h = conn.Metrics.JetStream
 	}
-	c.JSON(http.StatusOK, h.Window(names, span, time.Now()))
+	w := h.Window(names, span, time.Now())
+	w.Source = string(conn.Monitor.Source())
+	c.JSON(http.StatusOK, w)
 }
 
 func isJetStreamSeries(name string) bool {

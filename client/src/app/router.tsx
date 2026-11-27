@@ -36,7 +36,7 @@ export const router = createBrowserRouter([
         children: [
           {
             index: true,
-            handle: { title: 'Dashboard' } satisfies RouteHandle,
+            handle: { title: 'Overview' } satisfies RouteHandle,
             ...page(
               () => import('@/features/dashboard/DashboardPage'),
               'DashboardPage'

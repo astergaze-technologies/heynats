@@ -1,0 +1,21 @@
+{
+  "source": "system",
+  "server_version": "2.12.0",
+  "servers": 3,
+  "expected": 3,
+  "partial": false,
+  "features": {
+    "connections.all_accounts": {
+      "ok": true
+    },
+    "connections.kick": {
+      "ok": true
+    },
+    "servers": {
+      "ok": true
+    },
+    "trace": {
+      "ok": true
+    }
+  }
+}

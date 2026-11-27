@@ -1,14 +1,7 @@
-import {
-  ArrowDown,
-  ArrowUp,
-  Database,
-  MessageSquare,
-  Users,
-  Zap,
-} from 'lucide-react';
+import { ArrowDown, ArrowUp } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { Sparkline } from '@/components/charts/Sparkline';
-import { cn, formatBytes } from '@/lib/utils';
+import { cn } from '@/lib/utils';
 
 interface StatsCardProps {
   title: string;
@@ -18,6 +11,9 @@ interface StatsCardProps {
   /** Change vs a named period, e.g. { text: "+12% vs 1h ago", up: true, good: true }. */
   delta?: { text: string; up: boolean; good: boolean };
   trend?: (number | null)[];
+  /** Where the number comes from, e.g. a SourceBadge. */
+  badge?: ReactNode;
+  children?: ReactNode;
 }
 
 export function StatsCard({
@@ -27,6 +23,8 @@ export function StatsCard({
   icon,
   delta,
   trend,
+  badge,
+  children,
 }: StatsCardProps) {
   return (
     <div className="rounded-lg border bg-card p-4">
@@ -61,59 +59,13 @@ export function StatsCard({
           {subtitle}
         </p>
       )}
+      {children}
       {trend && (
         <div className="mt-2">
           <Sparkline values={trend} />
         </div>
       )}
-    </div>
-  );
-}
-
-interface ConnectionStatsProps {
-  totalConnections: number;
-  activeConnections: number;
-  totalMessages: number;
-  totalBytes: number;
-}
-
-export function ConnectionStats({
-  totalConnections,
-  activeConnections,
-  totalMessages,
-  totalBytes,
-}: ConnectionStatsProps) {
-  const activePercentage =
-    totalConnections > 0
-      ? ((activeConnections / totalConnections) * 100).toFixed(1)
-      : '0';
-
-  return (
-    <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-      <StatsCard
-        title="Connections"
-        value={totalConnections}
-        subtitle="Clients on this server"
-        icon={<Users />}
-      />
-      <StatsCard
-        title="Active"
-        value={activeConnections}
-        subtitle={`${activePercentage}% of total`}
-        icon={<Zap />}
-      />
-      <StatsCard
-        title="Messages"
-        value={totalMessages}
-        subtitle="Processed by these clients"
-        icon={<MessageSquare />}
-      />
-      <StatsCard
-        title="Data transferred"
-        value={formatBytes(totalBytes)}
-        subtitle="In and out"
-        icon={<Database />}
-      />
+      {badge && <div className="mt-2">{badge}</div>}
     </div>
   );
 }
