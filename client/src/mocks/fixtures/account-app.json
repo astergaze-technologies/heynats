@@ -1,0 +1,96 @@
+{
+  "name": "APP",
+  "update_time": "2026-11-27T11:44:28.443071Z",
+  "detail": {
+    "account_name": "APP",
+    "update_time": "2026-11-27T11:44:28.443071Z",
+    "expired": false,
+    "complete": true,
+    "jetstream_enabled": true,
+    "leafnode_connections": 0,
+    "client_connections": 0,
+    "subscriptions": 7,
+    "mappings": {
+      "orders.legacy.\u003e": [
+        {
+          "subject": "orders.\u003e",
+          "weight": 100
+        }
+      ]
+    },
+    "exports": [
+      {
+        "subject": "billing.quote",
+        "type": "service",
+        "response_type": "Singleton"
+      },
+      {
+        "subject": "events.\u003e",
+        "type": "stream"
+      }
+    ],
+    "imports": [
+      {
+        "subject": "$JS.API.\u003e",
+        "account": "SYS",
+        "to": "$JS.API.\u003e",
+        "local_subject": "$JS.API.\u003e",
+        "type": "service",
+        "invalid": false,
+        "share": true,
+        "tracking": false
+      },
+      {
+        "subject": "$SYS.REQ.ACCOUNT.APP.CONNZ",
+        "account": "SYS",
+        "to": "$SYS.REQ.ACCOUNT.PING.CONNZ",
+        "local_subject": "$SYS.REQ.ACCOUNT.PING.CONNZ",
+        "type": "service",
+        "invalid": false,
+        "share": false,
+        "tracking": false
+      },
+      {
+        "subject": "$SYS.REQ.ACCOUNT.APP.CONNZ",
+        "account": "SYS",
+        "to": "$SYS.REQ.SERVER.PING.CONNZ",
+        "local_subject": "$SYS.REQ.SERVER.PING.CONNZ",
+        "type": "service",
+        "invalid": false,
+        "share": false,
+        "tracking": false
+      },
+      {
+        "subject": "$SYS.REQ.ACCOUNT.APP.STATZ",
+        "account": "SYS",
+        "to": "$SYS.REQ.ACCOUNT.PING.STATZ",
+        "local_subject": "$SYS.REQ.ACCOUNT.PING.STATZ",
+        "type": "service",
+        "invalid": false,
+        "share": false,
+        "tracking": false
+      },
+      {
+        "subject": "$SYS.REQ.USER.APP.INFO",
+        "account": "SYS",
+        "to": "$SYS.REQ.USER.INFO",
+        "local_subject": "$SYS.REQ.USER.INFO",
+        "type": "service",
+        "invalid": false,
+        "share": true,
+        "tracking": false
+      }
+    ],
+    "name_tag": "APP",
+    "sublist_stats": {
+      "num_subscriptions": 7,
+      "num_cache": 0,
+      "num_inserts": 7,
+      "num_removes": 0,
+      "num_matches": 0,
+      "cache_hit_rate": 0,
+      "max_fanout": 0,
+      "avg_fanout": 0
+    }
+  }
+}

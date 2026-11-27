@@ -109,7 +109,13 @@ func (m *Monitor) PingWith(kind string, opts any) (*Result, error) {
 	default:
 		subject = "$SYS.REQ.SERVER.PING." + kind
 	}
+	return m.gather(subject, body)
+}
 
+// gather publishes one request on a ping subject and collects every
+// server's reply (see Ping for when it stops).
+func (m *Monitor) gather(subject string, body []byte) (*Result, error) {
+	src := m.Source()
 	inbox := m.nc.NewInbox()
 	sub, err := m.nc.SubscribeSync(inbox)
 	if err != nil {
