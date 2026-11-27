@@ -36,7 +36,7 @@ export function SeverityBadge({ severity }: { severity: Severity }) {
   );
 }
 
-function CopyCommand({ cli }: { cli: string }) {
+export function CopyCommand({ cli }: { cli: string }) {
   const [copied, setCopied] = useState(false);
   return (
     <span className="inline-flex items-center gap-1 rounded-md border bg-muted px-2 py-1 font-mono text-xs">

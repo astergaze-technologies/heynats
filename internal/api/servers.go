@@ -11,6 +11,8 @@ import (
 
 func monitorError(c *gin.Context, what string, err error) {
 	switch {
+	case errors.As(err, new(monitor.ErrNotAllowed)):
+		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
 	case errors.Is(err, monitor.ErrSystemOnly):
 		c.JSON(http.StatusForbidden, gin.H{"error": "Requires a system account user"})
 	case errors.Is(err, monitor.ErrBadRequest):

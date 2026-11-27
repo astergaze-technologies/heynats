@@ -30,7 +30,7 @@ var requirements = map[string]struct {
 }{
 	"servers":                  {system: true},
 	"connections.all_accounts": {system: true},
-	"connections.kick":         {system: true},
+	"connections.kick":         {system: true, minVersion: [3]int{2, 10, 0}}, // KICK added in 2.10.0
 	"trace":                    {minVersion: [3]int{2, 11, 0}},
 }
 
@@ -47,18 +47,25 @@ func (m *Monitor) Capabilities() (*Capabilities, error) {
 		Partial:       statz.Partial,
 		Features:      map[string]Feature{},
 	}
-	for name, req := range requirements {
-		v := req.minVersion
-		switch {
-		case req.system && caps.Source != System:
-			caps.Features[name] = Feature{Reason: "Requires a system account user"}
-		case v != [3]int{} && !util.ServerMinVersion(m.nc, v[0], v[1], v[2]):
-			caps.Features[name] = Feature{Reason: fmt.Sprintf("Requires NATS %d.%d", v[0], v[1])}
-		default:
-			caps.Features[name] = Feature{OK: true}
-		}
+	for name := range requirements {
+		caps.Features[name] = m.Feature(name)
 	}
 	return caps, nil
+}
+
+// Feature says whether this user and server can use a feature, and why not.
+func (m *Monitor) Feature(name string) Feature {
+	req, ok := requirements[name]
+	v := req.minVersion
+	switch {
+	case !ok:
+		return Feature{Reason: "Unknown feature"}
+	case req.system && m.Source() != System:
+		return Feature{Reason: "Requires a system account user"}
+	case v != [3]int{} && !util.ServerMinVersion(m.nc, v[0], v[1], v[2]):
+		return Feature{Reason: fmt.Sprintf("Requires NATS %d.%d", v[0], v[1])}
+	}
+	return Feature{OK: true}
 }
 
 // Connz is CONNZ summed over all servers. Connections stay raw so no field

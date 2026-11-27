@@ -1,10 +1,13 @@
 import {
   keepPreviousData,
   useInfiniteQuery,
+  useMutation,
   useQuery,
+  useQueryClient,
 } from '@tanstack/react-query';
 import { useConnectionStatus } from '@/features/connection/useNATS';
 import { natsApi } from '@/lib/api';
+import { showErrorToast, showSuccessToast } from '@/lib/error-utils';
 
 export const PAGE_SIZE = 500;
 
@@ -39,5 +42,22 @@ export function useConnection(server: string | null, cid: number | null) {
     queryFn: () => natsApi.getConnection(server as string, cid as number),
     enabled: !!server && cid != null,
     retry: false,
+  });
+}
+
+/** Disconnect a client, then refresh every connections list and the detail. */
+export function useKickConnection() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ server, cid }: { server: string; cid: number }) =>
+      natsApi.kickConnection(server, cid),
+    onSuccess: (_, { server, cid }) => {
+      queryClient.invalidateQueries({ queryKey: ['connections'] });
+      showSuccessToast(
+        'Client disconnected',
+        `Connection ${cid} on ${server} was closed.`
+      );
+    },
+    onError: (error) => showErrorToast('disconnect client', error),
   });
 }

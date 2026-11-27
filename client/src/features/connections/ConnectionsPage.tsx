@@ -10,6 +10,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import type { Conn, ConnState } from '@/lib/api';
 import { formatBytes, formatCount } from '@/lib/format';
 import { cn, formatRTT, formatTimestamp } from '@/lib/utils';
+import { KickButton } from './KickButton';
 import { useConnection, useConnections } from './useConnections';
 
 const FILTERS = ['account', 'user', 'server', 'name', 'ip', 'lang'] as const;
@@ -231,6 +232,11 @@ function Inspector({
                 </div>
               ))}
           </dl>
+          {!c.reason && (
+            <div className="mt-4">
+              <KickButton conn={c} />
+            </div>
+          )}
           <h3 className="mt-4 mb-2 text-sm font-semibold">
             Subscriptions ({c.subscriptions_list_detail?.length ?? 0})
           </h3>
