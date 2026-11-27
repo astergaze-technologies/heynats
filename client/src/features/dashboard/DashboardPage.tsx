@@ -8,6 +8,7 @@ import { formatRTT } from '@/lib/utils';
 import { OpenFindings } from './OpenFindings';
 import { OverviewStats } from './OverviewStats';
 import { PartialBanner } from './PartialBanner';
+import { TopLaggingConsumers } from './TopLaggingConsumers';
 import { TrafficCharts } from './TrafficCharts';
 
 function Field({
@@ -66,7 +67,10 @@ export function DashboardPage() {
     <div className="space-y-4 p-4 sm:p-6">
       <PartialBanner />
       <OverviewStats />
-      <OpenFindings />
+      <div className="grid gap-3 lg:grid-cols-2">
+        <OpenFindings />
+        <TopLaggingConsumers />
+      </div>
       <TrafficCharts />
 
       {info && (

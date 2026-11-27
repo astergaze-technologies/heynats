@@ -16,7 +16,7 @@ const devPassword = "Lm2KZ22PCKB9GjwUYzxnXAm9IyDM8svZZUSp7tSOYcQ="
 
 func connect(t *testing.T, c *natstest.Cluster, user string) *nats.Conn {
 	t.Helper()
-	nc, err := nats.Connect(c.Servers[0].ClientURL(), nats.UserInfo(user, devPassword))
+	nc, err := nats.Connect(c.Servers[0].ClientURL(), nats.UserInfo(user, devPassword), natstest.ConnectTimeout)
 	if err != nil {
 		t.Fatal(err)
 	}

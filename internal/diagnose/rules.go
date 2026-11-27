@@ -59,6 +59,25 @@ type Server struct {
 	MetaClusterSize        int
 }
 
+// Stream is one stream's replica state. Lagging lists replicas that have
+// been behind for longer than the engine's lag window.
+type Stream struct {
+	Name      string // account/stream, or stream in account scope
+	Clustered bool
+	Leader    string
+	Offline   []string
+	Lagging   []string
+}
+
+// Consumer: Growing is set by the engine when pending has only gone up over
+// its growth window; Since is the pending count at the window's start.
+type Consumer struct {
+	Name    string
+	Pending uint64
+	Since   uint64
+	Growing bool
+}
+
 // Snapshot is everything the rules may look at. System says whether the
 // per-server fields beyond Name/Responding/Missed are known.
 type Snapshot struct {
@@ -67,6 +86,8 @@ type Snapshot struct {
 	// Account JetStream usage for users without the system account; limit -1 = none.
 	AccountStorage    uint64
 	AccountMaxStorage int64
+	Streams           []Stream
+	Consumers         []Consumer
 }
 
 type Rule struct {
@@ -270,6 +291,94 @@ var Rules = []Rule{
 			return out
 		},
 	},
+	{
+		ID:  "js.stream_no_leader",
+		Doc: "A replicated stream has no leader, so it accepts no writes.",
+		Check: func(s Snapshot) []Finding {
+			var out []Finding
+			for _, st := range s.Streams {
+				if !st.Clustered || st.Leader != "" {
+					continue
+				}
+				out = append(out, Finding{
+					RuleID: "js.stream_no_leader", Severity: Critical, Resource: "stream:" + st.Name,
+					Title:    "Stream " + st.Name + " has no leader",
+					Detail:   "Publishes to it fail until its replicas elect a leader. Usually too many of its servers are down.",
+					Evidence: []Evidence{{"Leader", "none", "JSZ"}},
+					Fixes:    []Fix{{Label: "Stream report", CLI: "nats stream report"}},
+				})
+			}
+			return out
+		},
+	},
+	{
+		ID:  "js.replica_offline",
+		Doc: "A stream replica's server hasn't been seen by the stream leader recently.",
+		Check: func(s Snapshot) []Finding {
+			var out []Finding
+			for _, st := range s.Streams {
+				if len(st.Offline) == 0 || st.Leader == "" {
+					continue
+				}
+				out = append(out, Finding{
+					RuleID: "js.replica_offline", Severity: Warning, Resource: "stream:" + st.Name,
+					Title:    fmt.Sprintf("Stream %s has %d offline replica(s)", st.Name, len(st.Offline)),
+					Detail:   "The stream still works but has less redundancy; losing more servers could stop it.",
+					Evidence: []Evidence{{"Offline", strings.Join(st.Offline, ", "), "JSZ"}, {"Leader", st.Leader, "JSZ"}},
+					Fixes:    []Fix{{Label: "Stream info", CLI: "nats stream info " + lastPart(st.Name)}},
+				})
+			}
+			return out
+		},
+	},
+	{
+		ID:  "js.replica_lagging",
+		Doc: "A stream replica has been behind its leader for more than a minute.",
+		Check: func(s Snapshot) []Finding {
+			var out []Finding
+			for _, st := range s.Streams {
+				if len(st.Lagging) == 0 {
+					continue
+				}
+				out = append(out, Finding{
+					RuleID: "js.replica_lagging", Severity: Warning, Resource: "stream:" + st.Name,
+					Title:    "Stream " + st.Name + " has a replica that keeps falling behind",
+					Detail:   "A slow disk or network on that server, or more writes than it can keep up with.",
+					Evidence: []Evidence{{"Lagging replicas", strings.Join(st.Lagging, ", "), "JSZ"}},
+					Fixes:    []Fix{{Label: "Stream info", CLI: "nats stream info " + lastPart(st.Name)}},
+				})
+			}
+			return out
+		},
+	},
+	{
+		ID:  "js.consumer_lag_growing",
+		Doc: "A consumer's pending count has only gone up for the last 15 minutes.",
+		Check: func(s Snapshot) []Finding {
+			var out []Finding
+			for _, c := range s.Consumers {
+				if !c.Growing {
+					continue
+				}
+				out = append(out, Finding{
+					RuleID: "js.consumer_lag_growing", Severity: Warning, Resource: "consumer:" + c.Name,
+					Title:    "Consumer " + c.Name + " is falling behind",
+					Detail:   "Messages arrive faster than it processes them, or nothing is reading. Check its subscribers.",
+					Evidence: []Evidence{{"Pending", fmt.Sprintf("%d, up from %d", c.Pending, c.Since), "JSZ"}},
+					Fixes:    []Fix{{Label: "Consumer report", CLI: "nats consumer report " + streamOf(c.Name)}},
+				})
+			}
+			return out
+		},
+	},
+}
+
+func lastPart(name string) string { return name[strings.LastIndex(name, "/")+1:] }
+
+// streamOf returns the stream from "account/stream/consumer" or "stream/consumer".
+func streamOf(name string) string {
+	parts := strings.Split(name, "/")
+	return parts[len(parts)-2]
 }
 
 // Run applies every rule the snapshot can support.

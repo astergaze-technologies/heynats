@@ -45,7 +45,7 @@ func TestConnectionsOpenThenClosedWithReason(t *testing.T) {
 	m := monitorFor(t, c, "sys")
 	var clients []*nats.Conn
 	for i, s := range c.Servers {
-		nc, err := nats.Connect(s.ClientURL(), nats.UserInfo("admin", devPassword), nats.Name("app-"+string(rune('a'+i))))
+		nc, err := nats.Connect(s.ClientURL(), nats.UserInfo("admin", devPassword), nats.Name("app-"+string(rune('a'+i))), natstest.ConnectTimeout)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -94,7 +94,7 @@ func TestConnectionsOpenThenClosedWithReason(t *testing.T) {
 func TestKick(t *testing.T) {
 	c := natstest.StartCluster(t, 3, "../../nats.conf")
 	m := monitorFor(t, c, "sys")
-	victim, err := nats.Connect(c.Servers[1].ClientURL(), nats.UserInfo("admin", devPassword), nats.Name("victim"), nats.NoReconnect())
+	victim, err := nats.Connect(c.Servers[1].ClientURL(), nats.UserInfo("admin", devPassword), nats.Name("victim"), nats.NoReconnect(), natstest.ConnectTimeout)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -114,7 +114,7 @@ func TestKick(t *testing.T) {
 	}
 
 	// A brand-new session must be able to kick before it has listed anything.
-	nc, err := nats.Connect(c.Servers[0].ClientURL(), nats.UserInfo("sys", devPassword))
+	nc, err := nats.Connect(c.Servers[0].ClientURL(), nats.UserInfo("sys", devPassword), natstest.ConnectTimeout)
 	if err != nil {
 		t.Fatal(err)
 	}

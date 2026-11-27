@@ -186,6 +186,16 @@ func (e *HeyNats) RegisterRoutes() {
 	api.GET("/diagnostics", e.middleware.RequireConnection(), diagnostics)
 	api.GET("/servers/:id/raw/:kind", e.middleware.RequireConnection(), serverRaw)
 
+	api.GET("/jetstream/health", e.middleware.RequireConnection(), func(c *gin.Context) {
+		conn, _ := GetNatsCredentialFromContext(c)
+		h, err := conn.Monitor.JetStreamHealth()
+		if err != nil {
+			monitorError(c, "JetStream health", err)
+			return
+		}
+		c.JSON(http.StatusOK, h)
+	})
+
 	api.GET("/jetstream", e.middleware.RequireConnection(), func(c *gin.Context) {
 		conn, _ := GetNatsCredentialFromContext(c)
 		js, err := conn.Monitor.JetStream()

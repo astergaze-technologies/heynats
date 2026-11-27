@@ -1,11 +1,14 @@
 import { CheckCircle2, Download } from 'lucide-react';
 import { useId } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { EmptyState, LoadingState } from '@/components/PageStates';
 import { SourceBadge } from '@/components/SourceBadge';
 import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import type { DiagnosticsReport } from '@/lib/api';
 import { cn, formatTimestamp } from '@/lib/utils';
 import { FindingCard, SEVERITY } from './FindingCard';
+import { JetStreamTab } from './JetStreamTab';
 import { toMarkdown } from './markdown';
 import { useDiagnostics } from './useDiagnostics';
 
@@ -39,6 +42,40 @@ function download(r: DiagnosticsReport) {
 }
 
 export function HealthPage() {
+  const [params, setParams] = useSearchParams();
+  const tab = params.get('tab') === 'jetstream' ? 'jetstream' : 'overview';
+  return (
+    <div className="p-4 sm:p-6">
+      <Tabs
+        defaultValue="overview"
+        value={tab}
+        onValueChange={(t) =>
+          setParams(
+            (p) => {
+              const next = new URLSearchParams(p);
+              next.set('tab', t);
+              return next;
+            },
+            { replace: true }
+          )
+        }
+      >
+        <TabsList>
+          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="jetstream">JetStream</TabsTrigger>
+        </TabsList>
+        <TabsContent value="overview" className="mt-4">
+          <HealthOverview />
+        </TabsContent>
+        <TabsContent value="jetstream" className="mt-4">
+          <JetStreamTab />
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+}
+
+function HealthOverview() {
   const { data: r, isLoading, error } = useDiagnostics();
   const serversId = useId();
   const findingsId = useId();
@@ -59,7 +96,7 @@ export function HealthPage() {
   const unavailable = r.rules.filter((x) => !x.available);
 
   return (
-    <div className="space-y-4 p-4 sm:p-6">
+    <div className="space-y-4">
       <section
         className={cn(
           'flex flex-wrap items-center gap-4 rounded-lg border p-5',

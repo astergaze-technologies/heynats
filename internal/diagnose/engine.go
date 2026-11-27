@@ -1,6 +1,7 @@
 package diagnose
 
 import (
+	"fmt"
 	"log/slog"
 	"sort"
 	"sync"
@@ -9,7 +10,10 @@ import (
 	"github.com/astergaze-solutions/heynats/internal/monitor"
 )
 
-const slowWindow = 5 * time.Minute
+const (
+	slowWindow   = 5 * time.Minute
+	lagThreshold = 100 // replica operations behind before it counts as lagging
+)
 
 type ServerCheck struct {
 	Name       string `json:"name"`
@@ -34,6 +38,11 @@ type Report struct {
 	Rules     []RuleInfo     `json:"rules"`
 }
 
+type pendingPoint struct {
+	at    time.Time
+	count uint64
+}
+
 type slowPoint struct {
 	at    time.Time
 	count int64
@@ -50,13 +59,24 @@ type Diagnoser struct {
 	slow    map[string][]slowPoint
 	open    map[string]Finding
 	report  *Report
+	// How long lag must last, and how long pending must only grow, to count.
+	lagFor, growFor time.Duration
+	lagSince        map[string]time.Time
+	pending         map[string][]pendingPoint
 
 	stop, done chan struct{}
 }
 
 func Start(mon *monitor.Monitor, interval time.Duration) *Diagnoser {
+	return start(mon, interval, time.Minute, 15*time.Minute)
+}
+
+// start lets tests shorten the lag and growth windows.
+func start(mon *monitor.Monitor, interval, lagFor, growFor time.Duration) *Diagnoser {
 	d := &Diagnoser{
 		mon: mon, missed: map[string]int{}, slow: map[string][]slowPoint{}, open: map[string]Finding{},
+		lagFor: lagFor, growFor: growFor,
+		lagSince: map[string]time.Time{}, pending: map[string][]pendingPoint{},
 		stop: make(chan struct{}), done: make(chan struct{}),
 	}
 	go func() {
@@ -183,6 +203,74 @@ func (d *Diagnoser) slowDelta(name string, now time.Time, count int64) int64 {
 	return count - pts[0].count
 }
 
+// addJetStream fills streams and consumers, tracking how long each replica
+// has lagged and whether each consumer's pending has only grown.
+func (d *Diagnoser) addJetStream(snap *Snapshot, now time.Time) {
+	h, err := d.mon.JetStreamHealth()
+	if err != nil {
+		return // no JetStream for this account, or it didn't answer: nothing to judge
+	}
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	lagging := map[string]bool{}
+	for _, st := range h.Streams {
+		name := st.Name
+		if st.Account != "" {
+			name = st.Account + "/" + st.Name
+		}
+		s := Stream{Name: name, Clustered: st.Clustered, Leader: st.Leader}
+		for _, p := range st.Replicas {
+			key := name + "|" + p.Name
+			switch {
+			case p.Offline:
+				s.Offline = append(s.Offline, p.Name)
+			case p.Lag > lagThreshold:
+				lagging[key] = true
+				if _, ok := d.lagSince[key]; !ok {
+					d.lagSince[key] = now
+				}
+				if now.Sub(d.lagSince[key]) >= d.lagFor {
+					s.Lagging = append(s.Lagging, fmt.Sprintf("%s (%d behind)", p.Name, p.Lag))
+				}
+			}
+		}
+		snap.Streams = append(snap.Streams, s)
+	}
+	for key := range d.lagSince {
+		if !lagging[key] {
+			delete(d.lagSince, key)
+		}
+	}
+
+	seen := map[string]bool{}
+	for _, c := range h.Consumers {
+		name := c.Stream + "/" + c.Name
+		if c.Account != "" {
+			name = c.Account + "/" + name
+		}
+		seen[name] = true
+		pts := d.pending[name]
+		if n := len(pts); n > 0 && c.Pending < pts[n-1].count {
+			pts = nil // it caught up a little: start over
+		}
+		pts = append(pts, pendingPoint{now, c.Pending})
+		for len(pts) > 1 && now.Sub(pts[1].at) >= d.growFor {
+			pts = pts[1:]
+		}
+		d.pending[name] = pts
+		first := pts[0]
+		snap.Consumers = append(snap.Consumers, Consumer{
+			Name: name, Pending: c.Pending, Since: first.count,
+			Growing: now.Sub(first.at) >= d.growFor && c.Pending > first.count,
+		})
+	}
+	for name := range d.pending {
+		if !seen[name] {
+			delete(d.pending, name)
+		}
+	}
+}
+
 func (d *Diagnoser) snapshot(now time.Time) (Snapshot, error) {
 	if d.mon.Source() == monitor.System {
 		list, err := d.mon.Servers()
@@ -203,6 +291,7 @@ func (d *Diagnoser) snapshot(now time.Time) (Snapshot, error) {
 			}
 			snap.Servers = append(snap.Servers, sv)
 		}
+		d.addJetStream(&snap, now)
 		return snap, nil
 	}
 
@@ -222,5 +311,6 @@ func (d *Diagnoser) snapshot(now time.Time) (Snapshot, error) {
 	if js, err := d.mon.JetStream(); err == nil {
 		snap.AccountStorage, snap.AccountMaxStorage = js.Storage, js.MaxStorage
 	}
+	d.addJetStream(&snap, now)
 	return snap, nil
 }
