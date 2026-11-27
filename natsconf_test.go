@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/astergaze-solutions/heynats/internal/testutil/natstest"
 	"github.com/nats-io/nats-server/v2/server"
 	"github.com/nats-io/nats.go"
 )
@@ -32,7 +33,7 @@ func startDevServer(t *testing.T) *server.Server {
 
 func connectAs(t *testing.T, srv *server.Server, user string) *nats.Conn {
 	t.Helper()
-	nc, err := nats.Connect(srv.ClientURL(), nats.UserInfo(user, devPassword))
+	nc, err := nats.Connect(srv.ClientURL(), nats.UserInfo(user, devPassword), natstest.ConnectTimeout)
 	if err != nil {
 		t.Fatal(err)
 	}

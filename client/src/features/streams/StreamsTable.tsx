@@ -8,7 +8,12 @@ import {
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import type { Stream } from '@/lib/api';
+import {
+  StatusBadge,
+  streamStatus,
+  useJetStreamHealth,
+} from '@/features/health/jetstream';
+import type { Stream, StreamHealth } from '@/lib/api';
 import { cn, formatBytes, formatTimestamp } from '@/lib/utils';
 
 type SortKey = 'name' | 'messages' | 'bytes' | 'consumers';
@@ -31,6 +36,9 @@ export function StreamsTable({
   onBrowse,
   onDelete,
 }: StreamsTableProps) {
+  // Replica health by stream name (the list shows the user's own account).
+  const { data: js } = useJetStreamHealth();
+  const health = new Map((js?.streams ?? []).map((s) => [s.name, s]));
   const [sort, setSort] = useState<{ key: SortKey; desc: boolean }>({
     key: 'name',
     desc: false,
@@ -84,6 +92,9 @@ export function StreamsTable({
           <tr>
             {header('name', 'Name')}
             <th scope="col" className="px-4 py-2.5 text-left font-medium">
+              Health
+            </th>
+            <th scope="col" className="px-4 py-2.5 text-left font-medium">
               Subjects
             </th>
             <th
@@ -127,6 +138,15 @@ export function StreamsTable({
                       </span>
                     )}
                   </div>
+                </td>
+                <td className="px-4 py-2.5">
+                  {health.get(name) ? (
+                    <StatusBadge
+                      status={streamStatus(health.get(name) as StreamHealth)}
+                    />
+                  ) : (
+                    <span className="text-muted-foreground">—</span>
+                  )}
                 </td>
                 <td className="max-w-56 px-4 py-2.5">
                   <div className="flex items-center gap-1 overflow-hidden">

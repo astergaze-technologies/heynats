@@ -1,0 +1,81 @@
+{
+  "source": "account",
+  "partial": false,
+  "streams": [
+    {
+      "account": "",
+      "name": "AUDIT",
+      "leader": "n1",
+      "replicas": null,
+      "clustered": true,
+      "messages": 267,
+      "bytes": 10680,
+      "consumers": 0
+    },
+    {
+      "account": "",
+      "name": "ORDERS",
+      "leader": "n3",
+      "replicas": [
+        {
+          "name": "n1",
+          "current": true,
+          "active": 1453570042
+        },
+        {
+          "name": "n2",
+          "current": true,
+          "active": 1453580500
+        }
+      ],
+      "clustered": true,
+      "messages": 800,
+      "bytes": 32800,
+      "consumers": 2
+    }
+  ],
+  "consumers": [
+    {
+      "account": "",
+      "stream": "ORDERS",
+      "name": "billing",
+      "leader": "n1",
+      "replicas": [
+        {
+          "name": "n2",
+          "current": true,
+          "active": 1566702791
+        },
+        {
+          "name": "n3",
+          "current": true,
+          "active": 1568981583
+        }
+      ],
+      "pending": 800,
+      "ack_pending": 0,
+      "redelivered": 0
+    },
+    {
+      "account": "",
+      "stream": "ORDERS",
+      "name": "shipping",
+      "leader": "n1",
+      "replicas": [
+        {
+          "name": "n2",
+          "current": true,
+          "active": 1464881708
+        },
+        {
+          "name": "n3",
+          "current": true,
+          "active": 1464880833
+        }
+      ],
+      "pending": 800,
+      "ack_pending": 0,
+      "redelivered": 0
+    }
+  ]
+}

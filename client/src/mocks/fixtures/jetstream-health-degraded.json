@@ -1,0 +1,102 @@
+{
+  "source": "system",
+  "partial": true,
+  "meta": {
+    "leader": "n2",
+    "cluster_size": 3,
+    "peers": [
+      {
+        "name": "n1",
+        "current": true,
+        "active": 309181042
+      },
+      {
+        "name": "n3",
+        "current": true,
+        "offline": true,
+        "active": 309185000
+      }
+    ]
+  },
+  "streams": [
+    {
+      "account": "APP",
+      "name": "AUDIT",
+      "leader": "n1",
+      "replicas": null,
+      "clustered": true,
+      "messages": 267,
+      "bytes": 10680,
+      "consumers": 0
+    },
+    {
+      "account": "APP",
+      "name": "ORDERS",
+      "leader": "n1",
+      "replicas": [
+        {
+          "name": "n2",
+          "current": true,
+          "active": 11438417
+        },
+        {
+          "name": "n3",
+          "current": false,
+          "offline": true,
+          "active": 0,
+          "lag": 19
+        }
+      ],
+      "clustered": true,
+      "messages": 800,
+      "bytes": 32800,
+      "consumers": 2
+    }
+  ],
+  "consumers": [
+    {
+      "account": "APP",
+      "stream": "ORDERS",
+      "name": "billing",
+      "leader": "n1",
+      "replicas": [
+        {
+          "name": "n2",
+          "current": true,
+          "active": 1626143541
+        },
+        {
+          "name": "n3",
+          "current": true,
+          "offline": true,
+          "active": 1628422333
+        }
+      ],
+      "pending": 800,
+      "ack_pending": 0,
+      "redelivered": 0
+    },
+    {
+      "account": "APP",
+      "stream": "ORDERS",
+      "name": "shipping",
+      "leader": "n1",
+      "replicas": [
+        {
+          "name": "n2",
+          "current": true,
+          "active": 1524386833
+        },
+        {
+          "name": "n3",
+          "current": true,
+          "offline": true,
+          "active": 1524385958
+        }
+      ],
+      "pending": 800,
+      "ack_pending": 0,
+      "redelivered": 0
+    }
+  ]
+}

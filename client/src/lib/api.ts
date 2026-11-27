@@ -325,6 +325,45 @@ export interface Topology {
   edges: TopoEdge[];
 }
 
+/** A replica as its group leader sees it; the leader itself isn't listed. */
+export interface Peer {
+  name: string;
+  current: boolean;
+  offline?: boolean;
+  active: number; // nanoseconds since last seen
+  lag?: number;
+}
+
+export interface StreamHealth {
+  account: string;
+  name: string;
+  leader: string;
+  replicas: Peer[] | null;
+  clustered: boolean;
+  messages: number;
+  bytes: number;
+  consumers: number;
+}
+
+export interface ConsumerHealth {
+  account: string;
+  stream: string;
+  name: string;
+  leader: string;
+  replicas: Peer[] | null;
+  pending: number;
+  ack_pending: number;
+  redelivered: number;
+}
+
+export interface JetStreamHealth {
+  source: DataSource;
+  partial: boolean;
+  meta?: { leader: string; cluster_size: number; peers: Peer[] | null };
+  streams: StreamHealth[];
+  consumers: ConsumerHealth[];
+}
+
 export interface AccountInfo {
   account_information: AccountInformation;
   connection_limits: ConnectionLimits;
@@ -409,6 +448,9 @@ export const natsApi = {
     apiRequest('/nats/capabilities'),
 
   getJetStream: (): Promise<JetStreamSummary> => apiRequest('/nats/jetstream'),
+
+  getJetStreamHealth: (): Promise<JetStreamHealth> =>
+    apiRequest('/nats/jetstream/health'),
 
   getServers: (): Promise<ServerList> => apiRequest('/nats/servers'),
 

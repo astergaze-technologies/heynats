@@ -10,6 +10,7 @@ import closedConnections from './fixtures/connections-closed.json';
 import diagnostics from './fixtures/diagnostics.json';
 import info from './fixtures/info.json';
 import jetstream from './fixtures/jetstream.json';
+import jetstreamHealth from './fixtures/jetstream-health.json';
 import kvBuckets from './fixtures/kv-buckets.json';
 import metrics from './fixtures/metrics.json';
 import routez from './fixtures/server-routez.json';
@@ -41,6 +42,9 @@ export const handlers = [
   http.get('/api/nats/kv/buckets', () => HttpResponse.json(kvBuckets)),
   http.get('/api/nats/metrics', () => HttpResponse.json(metrics)),
   http.get('/api/nats/jetstream', () => HttpResponse.json(jetstream)),
+  http.get('/api/nats/jetstream/health', () =>
+    HttpResponse.json(jetstreamHealth)
+  ),
   http.get('/api/nats/servers', () => HttpResponse.json(servers)),
   http.get('/api/nats/topology', () => HttpResponse.json(topology)),
   http.get('/api/nats/accounts', () => HttpResponse.json(accounts)),

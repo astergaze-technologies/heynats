@@ -46,6 +46,20 @@ func TestRules(t *testing.T) {
 		{"js.storage_near_limit", func(s *Snapshot) {
 			*s = Snapshot{AccountStorage: 1 << 40, AccountMaxStorage: -1} // no limit
 		}, "", ""},
+		{"js.stream_no_leader", func(s *Snapshot) { s.Streams = []Stream{{Name: "APP/ORDERS", Clustered: true}} }, Critical, "stream:APP/ORDERS"},
+		{"js.stream_no_leader", func(s *Snapshot) { s.Streams = []Stream{{Name: "APP/LOCAL"}} }, "", ""}, // R1, unclustered
+		{"js.replica_offline", func(s *Snapshot) {
+			s.Streams = []Stream{{Name: "APP/ORDERS", Clustered: true, Leader: "n1", Offline: []string{"n3"}}}
+		}, Warning, "stream:APP/ORDERS"},
+		{"js.replica_lagging", func(s *Snapshot) {
+			s.Streams = []Stream{{Name: "APP/ORDERS", Clustered: true, Leader: "n1", Lagging: []string{"n2 (500 behind)"}}}
+		}, Warning, "stream:APP/ORDERS"},
+		{"js.consumer_lag_growing", func(s *Snapshot) {
+			s.Consumers = []Consumer{{Name: "APP/ORDERS/billing", Pending: 900, Since: 100, Growing: true}}
+		}, Warning, "consumer:APP/ORDERS/billing"},
+		{"js.consumer_lag_growing", func(s *Snapshot) {
+			s.Consumers = []Consumer{{Name: "APP/ORDERS/billing", Pending: 900}}
+		}, "", ""},
 	}
 	for _, tt := range tests {
 		snap := healthy()

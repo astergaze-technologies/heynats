@@ -30,9 +30,13 @@ func Start(t testing.TB) *server.Server {
 	return srv
 }
 
+// ConnectTimeout replaces nats.go's 2s handshake limit, which parallel test
+// packages running several clusters under -race can exceed.
+var ConnectTimeout = nats.Timeout(10 * time.Second)
+
 func Connect(t testing.TB, srv *server.Server) *nats.Conn {
 	t.Helper()
-	nc, err := nats.Connect(srv.ClientURL())
+	nc, err := nats.Connect(srv.ClientURL(), ConnectTimeout)
 	if err != nil {
 		t.Fatal(err)
 	}
