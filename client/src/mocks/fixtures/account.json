@@ -67,7 +67,8 @@
         "lang": "go",
         "version": "1.49.0"
       }
-    ]
+    ],
+    "expected": 3
   },
   "stats": {
     "source": "account",
@@ -120,6 +121,7 @@
         "lang": "go",
         "version": "1.49.0"
       }
-    ]
+    ],
+    "expected": 3
   }
 }

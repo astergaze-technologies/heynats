@@ -42,9 +42,10 @@ type Reply struct {
 }
 
 type Result struct {
-	Source  Source  `json:"source"`
-	Partial bool    `json:"partial"`
-	Replies []Reply `json:"replies"`
+	Source   Source  `json:"source"`
+	Partial  bool    `json:"partial"`
+	Expected int     `json:"expected"` // most servers ever seen
+	Replies  []Reply `json:"replies"`
 }
 
 type Monitor struct {
@@ -133,6 +134,7 @@ func (m *Monitor) Ping(kind string) (*Result, error) {
 	m.mu.Lock()
 	res.Partial = len(res.Replies) < m.expected
 	m.expected = max(m.expected, len(res.Replies))
+	res.Expected = m.expected
 	m.mu.Unlock()
 	return res, nil
 }

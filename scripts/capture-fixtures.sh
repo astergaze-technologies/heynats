@@ -21,6 +21,7 @@ get() { curl -sf -b "$JAR" "$APP/api/nats/$1" | jq . >"$OUT/$2.json"; echo "$OUT
 get status status
 get info info
 get account account
+get capabilities capabilities
 get streams streams
 get kv/buckets kv-buckets
 

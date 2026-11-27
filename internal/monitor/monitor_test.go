@@ -55,8 +55,8 @@ func TestSystemUserSeesEveryServer(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(res.Replies) != 2 || !res.Partial {
-		t.Fatalf("after stopping a node: servers=%d partial=%v", len(res.Replies), res.Partial)
+	if len(res.Replies) != 2 || !res.Partial || res.Expected != 3 {
+		t.Fatalf("after stopping a node: servers=%d of %d partial=%v", len(res.Replies), res.Expected, res.Partial)
 	}
 	if took := time.Since(start); took > 2500*time.Millisecond {
 		t.Fatalf("partial answer took %s", took)
