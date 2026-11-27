@@ -57,6 +57,17 @@ func diagnostics(c *gin.Context) {
 	c.JSON(http.StatusOK, conn.Diagnose.Report())
 }
 
+// topology serves the graph of servers, routes, gateways and leaf nodes.
+func topology(c *gin.Context) {
+	conn, _ := GetNatsCredentialFromContext(c)
+	t, err := conn.Monitor.Topology()
+	if err != nil {
+		monitorError(c, "topology", err)
+		return
+	}
+	c.JSON(http.StatusOK, t)
+}
+
 // serverRaw serves one server's monitoring data for one kind, e.g. ROUTEZ.
 func serverRaw(c *gin.Context) {
 	conn, _ := GetNatsCredentialFromContext(c)

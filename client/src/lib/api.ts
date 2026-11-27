@@ -299,6 +299,32 @@ export interface AccountDetail {
   };
 }
 
+export interface TopoNode {
+  id: string;
+  kind: 'server' | 'gateway' | 'leaf';
+  label: string;
+  cluster?: string;
+  responding: boolean;
+  version?: string;
+}
+
+/** Counters are cumulative; rates come from two polls. */
+export interface TopoEdge {
+  from: string;
+  to: string;
+  kind: 'route' | 'gateway' | 'leaf';
+  links: number;
+  in_msgs: number;
+  out_msgs: number;
+}
+
+export interface Topology {
+  partial: boolean;
+  expected: number;
+  nodes: TopoNode[];
+  edges: TopoEdge[];
+}
+
 export interface AccountInfo {
   account_information: AccountInformation;
   connection_limits: ConnectionLimits;
@@ -387,6 +413,8 @@ export const natsApi = {
   getServers: (): Promise<ServerList> => apiRequest('/nats/servers'),
 
   getAccounts: (): Promise<AccountList> => apiRequest('/nats/accounts'),
+
+  getTopology: (): Promise<Topology> => apiRequest('/nats/topology'),
 
   getAccount: (name: string): Promise<AccountDetail> =>
     apiRequest(`/nats/accounts/${encodeURIComponent(name)}`),

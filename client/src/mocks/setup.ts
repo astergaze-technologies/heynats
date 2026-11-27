@@ -1,4 +1,4 @@
-import { cleanup } from '@testing-library/react';
+import { cleanup, configure } from '@testing-library/react';
 import { setupServer } from 'msw/node';
 import { afterAll, afterEach, beforeAll } from 'vitest';
 import { handlers } from './handlers';
@@ -18,6 +18,10 @@ window.ResizeObserver = class {
   unobserve() {}
   disconnect() {}
 };
+
+// Page tests import the whole app fresh; under parallel load the first render
+// can take over a second, the default wait.
+configure({ asyncUtilTimeout: 5000 });
 
 export const server = setupServer(...handlers);
 

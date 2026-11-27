@@ -7,6 +7,7 @@ import {
   Headphones,
   HeartPulse,
   LayoutDashboard,
+  Network,
   Send,
   Server,
 } from 'lucide-react';
@@ -75,6 +76,12 @@ const Sidebar = () => {
       name: 'Health',
       path: '/dashboard/health',
       icon: <HeartPulse className="h-5 w-5" />,
+      exact: false,
+    },
+    {
+      name: 'Topology',
+      path: '/dashboard/topology',
+      icon: <Network className="h-5 w-5" />,
       exact: false,
     },
     {
