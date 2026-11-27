@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/astergaze-solutions/heynats/internal/monitor"
 	"github.com/astergaze-solutions/heynats/internal/util"
 	"github.com/dustin/go-humanize"
 	"github.com/nats-io/nats.go"
@@ -19,6 +20,7 @@ type NATSCredential struct {
 	Conn      *nats.Conn
 	JSConn    *nats.JetStreamContext
 	JetStream *jetstream.JetStream
+	Monitor   *monitor.Monitor
 	Host      string `json:"host"`
 	Port      string `json:"port"`
 	Username  string `json:"username"`
@@ -94,8 +96,8 @@ type NATSInfo struct {
 
 type AccountInfo struct {
 	AccountInformation map[string]interface{} `json:"account_information"`
-	ConnectionLimits   map[string]interface{} `json:"connection_limits"`
-	Stats              map[string]interface{} `json:"stats"`
+	ConnectionLimits   *monitor.Connz         `json:"connection_limits"`
+	Stats              *monitor.Connz         `json:"stats"`
 	JetStreamInfo      *JSAccountInfo         `json:"jetstream_info,omitempty"`
 }
 
@@ -148,6 +150,7 @@ func (nc *NATSCredential) Connect() error {
 	}
 
 	nc.Conn = conn
+	nc.Monitor = monitor.New(conn)
 	js, err := conn.JetStream()
 	if err != nil {
 		nc.JSConn = nil
@@ -215,59 +218,15 @@ func (nc *NATSCredential) GetAccountInfo() (*AccountInfo, error) {
 	if nc.Conn == nil || !nc.Conn.IsConnected() {
 		return nil, fmt.Errorf("not connected to NATS server")
 	}
-
-	// Request account info using NATS request-reply pattern
-	// This is a simplified version - in a real implementation you might need
-	// to use the NATS system account or have proper permissions
-	resp, err := nc.Conn.Request("$SYS.REQ.ACCOUNT.PING.CONNZ", nil, 2*time.Second)
+	connz, err := nc.Monitor.Connz()
 	if err != nil {
-		// If system requests are not available, return basic info
-		return &AccountInfo{
-			AccountInformation: nc.infoAction(),
-			ConnectionLimits: map[string]interface{}{
-				"max_connections":   "N/A",
-				"max_subscriptions": "N/A",
-			},
-			Stats: map[string]interface{}{
-				"connections":   "N/A",
-				"subscriptions": "N/A",
-			},
-		}, nil
+		return nil, err
 	}
-
-	if data, ok := accountPingData(resp.Data); ok {
-		return &AccountInfo{
-			AccountInformation: nc.infoAction(),
-			ConnectionLimits:   data,
-			Stats:              data,
-		}, nil
-	}
-
-	// Return basic connection info if system requests fail
-	stats := nc.Conn.Stats()
 	return &AccountInfo{
 		AccountInformation: nc.infoAction(),
-		ConnectionLimits: map[string]interface{}{
-			"max_connections": "N/A",
-		},
-		Stats: map[string]interface{}{
-			"in_msgs":    stats.InMsgs,
-			"out_msgs":   stats.OutMsgs,
-			"in_bytes":   stats.InBytes,
-			"out_bytes":  stats.OutBytes,
-			"reconnects": stats.Reconnects,
-		},
+		ConnectionLimits:   connz,
+		Stats:              connz,
 	}, nil
-}
-
-// accountPingData returns the "data" object of a $SYS reply; error replies have none.
-func accountPingData(raw []byte) (map[string]interface{}, bool) {
-	var reply map[string]interface{}
-	if err := json.Unmarshal(raw, &reply); err != nil {
-		return nil, false
-	}
-	data, ok := reply["data"].(map[string]interface{})
-	return data, ok
 }
 
 // neverExpires reports a decoded JSON expiry of 0, which decodes as float64.

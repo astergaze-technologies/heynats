@@ -45,6 +45,7 @@ The SPA is embedded into the Go binary (`//go:embed all:client/dist` in `main.go
 - `NatsConnectionStore` (`internal/api/connection.go`) keeps the original `ConnectionRequest` so `GetOrReconnect` can transparently redial dead connections. A background goroutine closes connections idle > 5 min.
 - Middleware (`internal/api/middleware.go`): `Handle()` optionally attaches the connection; `RequireConnection()` returns 401 (no/invalid cookie) or 503 (reconnect failed). Both put the connection in gin context under `NatsConnectionKey`; handlers fetch it via `GetNatsCredentialFromContext` (`internal/api/context.go`).
 - All NATS operations live as methods on `pkg.NATSCredential` (`internal/pkg/nats_client.go`, KV in `internal/pkg/kv.go`); API handlers are thin wrappers.
+- Monitoring (`internal/monitor`, via `NATSCredential.Monitor`): asks every server (`$SYS.REQ.SERVER.PING.*` for system-account users, else `$SYS.REQ.ACCOUNT.PING.*`) and gathers all replies; results say `source` and `partial`. `GET /api/nats/capabilities` reports which features the user/server support (table in `capabilities.go`).
 - Subscriptions (`internal/api/subscribe.go`) stream messages to the browser over SSE (`text/event-stream`).
 
 **Frontend** (`client/src`), organised by feature:

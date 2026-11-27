@@ -165,6 +165,16 @@ func (e *HeyNats) RegisterRoutes() {
 		c.JSON(http.StatusOK, accountInfo)
 	})
 
+	api.GET("/capabilities", e.middleware.RequireConnection(), func(c *gin.Context) {
+		conn, _ := GetNatsCredentialFromContext(c)
+		caps, err := conn.Monitor.Capabilities()
+		if err != nil {
+			c.JSON(http.StatusBadGateway, gin.H{"error": "Failed to read server capabilities", "details": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, caps)
+	})
+
 	api.GET("/account", e.middleware.RequireConnection(), func(c *gin.Context) {
 		natsConn, exists := c.Get(NatsConnectionKey)
 		if !exists {
