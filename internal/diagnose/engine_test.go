@@ -76,7 +76,7 @@ func TestReplicaOfflineThenResolves(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	d := start(monitor.New(sys), 500*time.Millisecond, time.Minute, 15*time.Minute)
+	d := start(monitor.New(sys), 500*time.Millisecond, defaultWindows)
 	defer d.Stop()
 	waitReport(t, d, "healthy", func(r *Report) bool { return r.Verdict == "healthy" })
 
@@ -107,7 +107,9 @@ func TestConsumerLagGrowing(t *testing.T) {
 		t.Fatal(err)
 	}
 	// Account scope: the admin user's own JetStream API.
-	d := start(monitor.New(admin), 300*time.Millisecond, time.Minute, 2*time.Second)
+	w := defaultWindows
+	w.growFor = 2 * time.Second
+	d := start(monitor.New(admin), 300*time.Millisecond, w)
 	defer d.Stop()
 
 	stop := make(chan struct{})
@@ -138,4 +140,96 @@ func connectAs(t *testing.T, c *natstest.Cluster, user string) *nats.Conn {
 	}
 	t.Cleanup(nc.Close)
 	return nc
+}
+
+// One scenario per consumer rule, all in one cluster and one diagnoser.
+func TestConsumerRulesOnACluster(t *testing.T) {
+	c := natstest.StartCluster(t, 3, "../../nats.conf")
+	admin := connectAs(t, c, "admin")
+	js, _ := jetstream.New(admin)
+	ctx := context.Background()
+	stream := func(name string, subjects ...string) {
+		t.Helper()
+		for deadline := time.Now().Add(15 * time.Second); ; time.Sleep(200 * time.Millisecond) {
+			_, err := js.CreateStream(ctx, jetstream.StreamConfig{Name: name, Subjects: subjects})
+			if err == nil {
+				return
+			}
+			if time.Now().After(deadline) {
+				t.Fatal(err)
+			}
+		}
+	}
+	consumer := func(s string, cfg jetstream.ConsumerConfig) jetstream.Consumer {
+		t.Helper()
+		cons, err := js.CreateConsumer(ctx, s, cfg)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return cons
+	}
+	publish := func(subject string, n int) {
+		for range n {
+			if _, err := js.Publish(ctx, subject, []byte("x")); err != nil {
+				t.Fatal(err)
+			}
+		}
+	}
+
+	stream("ORDERS", "orders.>", "legacy.>")
+	publish("orders.new", 20)
+
+	full := consumer("ORDERS", jetstream.ConsumerConfig{Durable: "full", MaxAckPending: 5, AckPolicy: jetstream.AckExplicitPolicy})
+	if _, err := full.Fetch(5); err != nil { // received, never acked
+		t.Fatal(err)
+	}
+	consumer("ORDERS", jetstream.ConsumerConfig{Durable: "paused"})
+	if _, err := js.PauseConsumer(ctx, "ORDERS", "paused", time.Now().Add(time.Hour)); err != nil {
+		t.Fatal(err)
+	}
+	consumer("ORDERS", jetstream.ConsumerConfig{Durable: "pushed", DeliverSubject: "deliver.nobody"})
+	consumer("ORDERS", jetstream.ConsumerConfig{Durable: "idle"})
+	consumer("ORDERS", jetstream.ConsumerConfig{Durable: "legacy", FilterSubject: "legacy.>"})
+	// Dropping legacy.> from the stream orphans the consumer's filter.
+	if _, err := js.UpdateStream(ctx, jetstream.StreamConfig{Name: "ORDERS", Subjects: []string{"orders.>"}}); err != nil {
+		t.Fatal(err)
+	}
+	flaky := consumer("ORDERS", jetstream.ConsumerConfig{Durable: "flaky", AckPolicy: jetstream.AckExplicitPolicy, AckWait: 200 * time.Millisecond})
+	stop := make(chan struct{})
+	defer close(stop)
+	go func() { // a client that keeps taking messages and never acks them
+		for {
+			select {
+			case <-stop:
+				return
+			default:
+				_, _ = flaky.Fetch(10, jetstream.FetchMaxWait(300*time.Millisecond))
+			}
+		}
+	}()
+
+	d := start(monitor.New(admin), 300*time.Millisecond, windows{
+		lagFor: time.Minute, growFor: time.Hour, redeliverFor: 2 * time.Second, idleFor: time.Second,
+	})
+	defer d.Stop()
+	want := map[string]string{
+		"consumer.ack_pending_full":       "consumer:ORDERS/full",
+		"consumer.paused":                 "consumer:ORDERS/paused",
+		"consumer.no_interest":            "consumer:ORDERS/pushed",
+		"consumer.nobody_pulling":         "consumer:ORDERS/idle",
+		"consumer.filter_matches_nothing": "consumer:ORDERS/legacy",
+		"consumer.high_redelivery":        "consumer:ORDERS/flaky",
+	}
+	r := waitReport(t, d, "every consumer rule", func(r *Report) bool {
+		for rule, res := range want {
+			if finding(r, rule, res) == nil {
+				return false
+			}
+		}
+		return true
+	})
+	resume := finding(r, "consumer.paused", "consumer:ORDERS/paused").Fixes[0]
+	if resume.Action != "consumer.resume" || resume.Params["consumer"] != "paused" {
+		t.Fatalf("own-account pause should offer Resume: %+v", resume)
+	}
 }

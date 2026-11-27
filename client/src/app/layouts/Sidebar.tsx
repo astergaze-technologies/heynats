@@ -7,6 +7,7 @@ import {
   Headphones,
   HeartPulse,
   LayoutDashboard,
+  ListTree,
   Network,
   Send,
   Server,
@@ -76,6 +77,12 @@ const Sidebar = () => {
       name: 'Health',
       path: '/dashboard/health',
       icon: <HeartPulse className="h-5 w-5" />,
+      exact: false,
+    },
+    {
+      name: 'Subjects',
+      path: '/dashboard/subjects',
+      icon: <ListTree className="h-5 w-5" />,
       exact: false,
     },
     {

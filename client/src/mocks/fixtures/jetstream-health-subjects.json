@@ -1,0 +1,62 @@
+{
+  "source": "account",
+  "partial": false,
+  "streams": [
+    {
+      "account": "",
+      "name": "ORDERS",
+      "subjects": [
+        "orders.\u003e"
+      ],
+      "leader": "n3",
+      "replicas": [
+        {
+          "name": "n1",
+          "current": true,
+          "active": 736398833
+        },
+        {
+          "name": "n2",
+          "current": true,
+          "active": 736392750
+        }
+      ],
+      "clustered": true,
+      "messages": 5,
+      "bytes": 235,
+      "consumers": 1
+    }
+  ],
+  "consumers": [
+    {
+      "account": "",
+      "stream": "ORDERS",
+      "name": "eu-only",
+      "leader": "n1",
+      "replicas": [
+        {
+          "name": "n2",
+          "current": true,
+          "active": 739125625
+        },
+        {
+          "name": "n3",
+          "current": true,
+          "active": 742013208
+        }
+      ],
+      "pending": 4,
+      "ack_pending": 0,
+      "redelivered": 0,
+      "waiting": 0,
+      "max_ack_pending": 1000,
+      "ack_wait": 30000000000,
+      "filter_subjects": [
+        "orders.eu.\u003e"
+      ],
+      "delivered": 0,
+      "delivered_stream": 0,
+      "created": "2026-11-27T13:23:01.24896Z"
+    }
+  ]
+}

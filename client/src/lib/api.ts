@@ -95,6 +95,7 @@ export type FeatureName =
   | 'servers'
   | 'connections.all_accounts'
   | 'connections.kick'
+  | 'consumers.pause'
   | 'trace';
 
 export interface Capabilities {
@@ -172,7 +173,13 @@ export interface Finding {
   title: string;
   detail: string;
   evidence: { label: string; value: string; source: string }[];
-  fixes?: { label: string; link?: string; cli?: string }[];
+  fixes?: {
+    label: string;
+    link?: string;
+    cli?: string;
+    action?: 'consumer.resume';
+    params?: Record<string, string>;
+  }[];
   first_seen: string;
   last_seen: string;
 }
@@ -354,6 +361,12 @@ export interface ConsumerHealth {
   pending: number;
   ack_pending: number;
   redelivered: number;
+  deliver_subject?: string;
+  push_bound?: boolean;
+  waiting: number;
+  max_ack_pending: number;
+  paused?: boolean;
+  filter_subjects?: string[] | null;
 }
 
 export interface JetStreamHealth {
@@ -362,6 +375,32 @@ export interface JetStreamHealth {
   meta?: { leader: string; cluster_size: number; peers: Peer[] | null };
   streams: StreamHealth[];
   consumers: ConsumerHealth[];
+}
+
+export interface Subscriber {
+  server: string;
+  cid: number;
+  name?: string;
+  account?: string;
+  queue?: string;
+  msgs: number;
+}
+
+export interface StoredStream {
+  account?: string;
+  name: string;
+  subjects: string[] | null;
+  /** Messages per stored subject; own account only. */
+  counts?: Record<string, number>;
+  truncated?: boolean;
+}
+
+export interface SubjectMap {
+  source: DataSource;
+  partial: boolean;
+  listening: Record<string, Subscriber[]>;
+  streams: StoredStream[];
+  hidden_inboxes: number;
 }
 
 export interface AccountInfo {
@@ -458,11 +497,22 @@ export const natsApi = {
 
   getTopology: (): Promise<Topology> => apiRequest('/nats/topology'),
 
+  getSubjects: (): Promise<SubjectMap> => apiRequest('/nats/subjects'),
+
   getAccount: (name: string): Promise<AccountDetail> =>
     apiRequest(`/nats/accounts/${encodeURIComponent(name)}`),
 
   getDiagnostics: (): Promise<DiagnosticsReport> =>
     apiRequest('/nats/diagnostics'),
+
+  resumeConsumer: (
+    stream: string,
+    consumer: string
+  ): Promise<{ resumed: boolean }> =>
+    apiRequest(
+      `/nats/streams/consumers/${encodeURIComponent(stream)}/${encodeURIComponent(consumer)}/resume`,
+      { method: 'POST' }
+    ),
 
   getConnections: (params: Record<string, string>): Promise<ConnPage> =>
     apiRequest(`/nats/connections?${new URLSearchParams(params)}`),

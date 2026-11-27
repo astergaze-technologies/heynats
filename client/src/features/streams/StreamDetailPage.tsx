@@ -8,6 +8,7 @@ import { appendCapped, useEventSources } from '@/lib/useEventSources';
 import { formatBytes } from '@/lib/utils';
 import { LiveMessageDialog } from './LiveMessageDialog';
 import { LiveMessagesPanel } from './LiveMessagesPanel';
+import { StreamConsumers } from './StreamConsumers';
 import { SubjectList } from './SubjectList';
 import type { MessageEvent, SubjectSubscription } from './types';
 import { useStream } from './useStreams';
@@ -248,6 +249,8 @@ export function StreamDetailPage() {
               icon={<Hash className="w-4 h-4 text-warning" />}
             />
           </div>
+
+          <StreamConsumers stream={streamName ?? ''} />
 
           {/* Stream Configuration */}
           <div className="bg-card rounded-lg border border-border p-4 mb-4 shrink-0">

@@ -1,0 +1,48 @@
+{
+  "source": "account",
+  "partial": false,
+  "listening": {
+    "billing.quote": [
+      {
+        "server": "n3",
+        "cid": 22,
+        "name": "billing-api",
+        "account": "APP",
+        "msgs": 0
+      }
+    ],
+    "orders.*.created": [
+      {
+        "server": "n2",
+        "cid": 22,
+        "name": "eu-listener",
+        "account": "APP",
+        "queue": "workers",
+        "msgs": 4
+      }
+    ],
+    "orders.eu.created": [
+      {
+        "server": "n2",
+        "cid": 22,
+        "name": "eu-listener",
+        "account": "APP",
+        "msgs": 3
+      }
+    ]
+  },
+  "streams": [
+    {
+      "name": "ORDERS",
+      "subjects": [
+        "orders.\u003e"
+      ],
+      "counts": {
+        "orders.eu.created": 3,
+        "orders.eu.shipped": 1,
+        "orders.us.created": 1
+      }
+    }
+  ],
+  "hidden_inboxes": 3
+}
