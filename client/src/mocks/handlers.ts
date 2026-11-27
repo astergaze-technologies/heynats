@@ -1,5 +1,6 @@
 import { HttpResponse, http } from 'msw';
 import account from './fixtures/account.json';
+import capabilities from './fixtures/capabilities.json';
 import info from './fixtures/info.json';
 import kvBuckets from './fixtures/kv-buckets.json';
 import status from './fixtures/status.json';
@@ -22,6 +23,7 @@ export const handlers = [
   }),
   http.get('/api/nats/info', () => HttpResponse.json(info)),
   http.get('/api/nats/account', () => HttpResponse.json(account)),
+  http.get('/api/nats/capabilities', () => HttpResponse.json(capabilities)),
   http.get('/api/nats/streams', () => HttpResponse.json(streams)),
   http.get('/api/nats/kv/buckets', () => HttpResponse.json(kvBuckets)),
 ];

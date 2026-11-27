@@ -1,6 +1,7 @@
 import { Search, Unplug } from 'lucide-react';
 import { useState } from 'react';
 import { EmptyState, LoadingState } from '@/components/PageStates';
+import { SourceBadge } from '@/components/SourceBadge';
 import { ConnectionStats } from '@/components/StatsCard';
 import { Input } from '@/components/ui/input';
 import {
@@ -156,6 +157,14 @@ export function DashboardPage() {
               {accountInfo.connection_limits.num_connections} · limit{' '}
               {accountInfo.connection_limits.limit}
             </span>
+          )}
+          {accountInfo && (
+            <SourceBadge
+              source={accountInfo.connection_limits.source}
+              partial={accountInfo.connection_limits.partial}
+              servers={accountInfo.connection_limits.servers}
+              expected={accountInfo.connection_limits.expected}
+            />
           )}
           <span className="ml-auto text-xs text-muted-foreground">
             Updated{' '}

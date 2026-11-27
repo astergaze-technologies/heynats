@@ -14,6 +14,7 @@ export const queryKeys = {
     status: () => [...queryKeys.nats.all, 'status'] as const,
     info: () => [...queryKeys.nats.all, 'info'] as const,
     account: () => [...queryKeys.nats.all, 'account'] as const,
+    capabilities: () => [...queryKeys.nats.all, 'capabilities'] as const,
   },
 };
 
@@ -48,6 +49,18 @@ export function useAccountInfo(enabled = true) {
     enabled,
     staleTime: 2000,
     refetchInterval: 5000,
+    retry: 1,
+  });
+}
+
+// What this user and server support; refetched on connect with the other nats queries.
+export function useCapabilities(enabled = true) {
+  return useQuery({
+    queryKey: queryKeys.nats.capabilities(),
+    queryFn: natsApi.getCapabilities,
+    enabled,
+    staleTime: 30_000,
+    refetchInterval: 30_000,
     retry: 1,
   });
 }

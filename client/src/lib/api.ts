@@ -76,15 +76,34 @@ export interface AccountInformation {
 
 // CONNZ summed over every server that answered.
 export interface ConnectionLimits {
-  source: 'system' | 'account';
+  source: DataSource;
   partial: boolean;
   servers: number;
+  expected: number;
   connections: Connection[];
   limit: number;
   now: string;
   num_connections: number;
   total: number;
   errors?: string[];
+}
+
+export type DataSource = 'system' | 'account';
+
+// Mirrors the requirements table in internal/monitor/capabilities.go.
+export type FeatureName =
+  | 'servers'
+  | 'connections.all_accounts'
+  | 'connections.kick'
+  | 'trace';
+
+export interface Capabilities {
+  source: DataSource;
+  server_version: string;
+  servers: number;
+  expected: number;
+  partial: boolean;
+  features: Record<FeatureName, { ok: boolean; reason?: string }>;
 }
 
 export interface AccountInfo {
@@ -166,6 +185,9 @@ export const natsApi = {
 
   // Get account information
   getAccountInfo: (): Promise<AccountInfo> => apiRequest('/nats/account'),
+
+  getCapabilities: (): Promise<Capabilities> =>
+    apiRequest('/nats/capabilities'),
 };
 
 // JetStream Stream interfaces

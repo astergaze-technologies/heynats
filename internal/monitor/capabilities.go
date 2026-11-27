@@ -17,6 +17,7 @@ type Capabilities struct {
 	Source        Source             `json:"source"`
 	ServerVersion string             `json:"server_version"`
 	Servers       int                `json:"servers"`
+	Expected      int                `json:"expected"`
 	Partial       bool               `json:"partial"`
 	Features      map[string]Feature `json:"features"`
 }
@@ -42,6 +43,7 @@ func (m *Monitor) Capabilities() (*Capabilities, error) {
 		Source:        statz.Source,
 		ServerVersion: m.nc.ConnectedServerVersion(),
 		Servers:       len(statz.Replies),
+		Expected:      statz.Expected,
 		Partial:       statz.Partial,
 		Features:      map[string]Feature{},
 	}
@@ -65,6 +67,7 @@ type Connz struct {
 	Source      Source            `json:"source"`
 	Partial     bool              `json:"partial"`
 	Servers     int               `json:"servers"`
+	Expected    int               `json:"expected"`
 	Now         time.Time         `json:"now"`
 	NumConns    int               `json:"num_connections"`
 	Total       int               `json:"total"`
@@ -78,7 +81,7 @@ func (m *Monitor) Connz() (*Connz, error) {
 	if err != nil {
 		return nil, err
 	}
-	out := &Connz{Source: res.Source, Partial: res.Partial, Servers: len(res.Replies), Connections: []json.RawMessage{}}
+	out := &Connz{Source: res.Source, Partial: res.Partial, Servers: len(res.Replies), Expected: res.Expected, Connections: []json.RawMessage{}}
 	for _, r := range res.Replies {
 		if r.Error != nil {
 			out.Errors = append(out.Errors, fmt.Sprintf("%s: %s", r.Server.Name, r.Error.Description))
