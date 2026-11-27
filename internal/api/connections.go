@@ -41,6 +41,21 @@ func listConnections(c *gin.Context) {
 	c.JSON(http.StatusOK, page)
 }
 
+// kickConnection disconnects a client; most clients reconnect on their own.
+func kickConnection(c *gin.Context) {
+	conn, _ := GetNatsCredentialFromContext(c)
+	cid, err := strconv.ParseUint(c.Param("cid"), 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "cid must be a number"})
+		return
+	}
+	if err := conn.Monitor.Kick(c.Param("server"), cid); err != nil {
+		monitorError(c, "connection", err)
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"kicked": true})
+}
+
 func getConnection(c *gin.Context) {
 	conn, _ := GetNatsCredentialFromContext(c)
 	cid, err := strconv.ParseUint(c.Param("cid"), 10, 64)

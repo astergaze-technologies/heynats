@@ -223,6 +223,7 @@ export interface ConnPage {
 }
 
 export interface ConnDetail extends Conn {
+  server_id: string;
   tls_version?: string;
   subscriptions_list_detail?: {
     subject: string;
@@ -330,6 +331,11 @@ export const natsApi = {
 
   getConnection: (server: string, cid: number): Promise<ConnDetail> =>
     apiRequest(`/nats/connections/${encodeURIComponent(server)}/${cid}`),
+
+  kickConnection: (server: string, cid: number): Promise<{ kicked: boolean }> =>
+    apiRequest(`/nats/connections/${encodeURIComponent(server)}/${cid}/kick`, {
+      method: 'POST',
+    }),
 
   getServerRaw: (id: string, kind: ServerKind): Promise<any> =>
     apiRequest(`/nats/servers/${encodeURIComponent(id)}/raw/${kind}`),

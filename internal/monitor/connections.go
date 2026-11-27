@@ -187,6 +187,7 @@ type Subscription struct {
 // ConnDetail is one connection as its server reports it, with subscriptions.
 type ConnDetail struct {
 	Conn
+	ServerID   string         `json:"server_id"` // for "copy as CLI"
 	TLSVersion string         `json:"tls_version,omitempty"`
 	Subs       []Subscription `json:"subscriptions_list_detail"`
 }
@@ -209,9 +210,45 @@ func (m *Monitor) Connection(server string, cid uint64) (*ConnDetail, error) {
 		}
 		if len(d.Conns) > 0 {
 			c := d.Conns[0]
-			c.Server = server
+			c.Server, c.ServerID = server, r.Server.ID
 			return &c, nil
 		}
 	}
 	return nil, fmt.Errorf("%w: no connection %d on %s", ErrNotFound, cid, server)
+}
+
+// ErrNotAllowed carries the user-facing reason a feature is unavailable.
+type ErrNotAllowed struct{ Reason string }
+
+func (e ErrNotAllowed) Error() string { return e.Reason }
+
+// Kick disconnects one client. The server name is looked up among servers
+// that have answered, so only a real server id goes into the subject.
+func (m *Monitor) Kick(server string, cid uint64) error {
+	if f := m.Feature("connections.kick"); !f.OK {
+		return ErrNotAllowed{f.Reason}
+	}
+	s, ok := m.Known()[server]
+	if !ok {
+		// A fresh session hasn't heard from any server yet: ask once.
+		if _, err := m.Ping("STATZ"); err != nil {
+			return err
+		}
+		if s, ok = m.Known()[server]; !ok {
+			return fmt.Errorf("%w: unknown server %q", ErrNotFound, server)
+		}
+	}
+	body, _ := json.Marshal(map[string]uint64{"cid": cid})
+	msg, err := m.nc.Request("$SYS.REQ.SERVER."+s.ID+".KICK", body, hardWait)
+	if err != nil {
+		return err
+	}
+	var r Reply
+	if err := json.Unmarshal(msg.Data, &r); err != nil {
+		return err
+	}
+	if r.Error != nil {
+		return fmt.Errorf("%w: %s", ErrNotFound, r.Error.Description)
+	}
+	return nil
 }

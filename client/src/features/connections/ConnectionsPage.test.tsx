@@ -1,7 +1,14 @@
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import { HttpResponse, http } from 'msw';
 import { afterAll, beforeAll, beforeEach, expect, test, vi } from 'vitest';
 import type { Conn, ConnPage } from '@/lib/api';
+import capabilitiesSystem from '@/mocks/fixtures/capabilities-system.json';
 import connections from '@/mocks/fixtures/connections.json';
 import { server } from '@/mocks/setup';
 
@@ -95,4 +102,39 @@ test('clicking a row opens its details and subscriptions', async () => {
   );
   expect(await panel.findByText('billing.quote')).toBeTruthy();
   expect(window.location.search).toMatch(/server_detail=n2&cid=56/);
+});
+
+test('system user can disconnect an open client after confirming', async () => {
+  let kicked = '';
+  server.use(
+    http.get('/api/nats/capabilities', () =>
+      HttpResponse.json(capabilitiesSystem)
+    ),
+    http.post('/api/nats/connections/:server/:cid/kick', ({ params }) => {
+      kicked = `${params.server}/${params.cid}`;
+      return HttpResponse.json({ kicked: true });
+    })
+  );
+  await open('/dashboard/connections?server_detail=n2&cid=56');
+  fireEvent.click(
+    await screen.findByRole('button', { name: 'Disconnect client' })
+  );
+  const dialog = within(await screen.findByRole('alertdialog'));
+  expect(dialog.getByText('Disconnect billing-api?')).toBeTruthy();
+  expect(dialog.getByText(/^nats server request kick 56 N/)).toBeTruthy();
+  expect(kicked).toBe('');
+  fireEvent.click(dialog.getByRole('button', { name: 'Disconnect' }));
+  await waitFor(() => expect(kicked).toBe('n2/56'));
+});
+
+test('without the system account the button explains why', async () => {
+  await open('/dashboard/connections?server_detail=n2&cid=56');
+  expect(
+    await screen.findByText('Requires a system account user')
+  ).toBeTruthy();
+  expect(
+    screen
+      .getByRole('button', { name: 'Disconnect client', hidden: true })
+      .closest('[inert]')
+  ).toBeTruthy();
 });

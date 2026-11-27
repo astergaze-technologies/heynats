@@ -179,6 +179,7 @@ func (e *HeyNats) RegisterRoutes() {
 	api.GET("/servers", e.middleware.RequireConnection(), listServers)
 	api.GET("/connections", e.middleware.RequireConnection(), listConnections)
 	api.GET("/connections/:server/:cid", e.middleware.RequireConnection(), getConnection)
+	api.POST("/connections/:server/:cid/kick", e.middleware.RequireConnection(), kickConnection)
 	api.GET("/diagnostics", e.middleware.RequireConnection(), diagnostics)
 	api.GET("/servers/:id/raw/:kind", e.middleware.RequireConnection(), serverRaw)
 

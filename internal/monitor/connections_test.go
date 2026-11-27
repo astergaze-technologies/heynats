@@ -1,6 +1,7 @@
 package monitor
 
 import (
+	"errors"
 	"fmt"
 	"testing"
 	"time"
@@ -87,5 +88,50 @@ func TestConnectionsOpenThenClosedWithReason(t *testing.T) {
 	}
 	if _, err := m.Connections(ConnQuery{Sort: "nope", Limit: 1}); err == nil {
 		t.Fatal("unknown sort accepted")
+	}
+}
+
+func TestKick(t *testing.T) {
+	c := natstest.StartCluster(t, 3, "../../nats.conf")
+	m := monitorFor(t, c, "sys")
+	victim, err := nats.Connect(c.Servers[1].ClientURL(), nats.UserInfo("admin", devPassword), nats.Name("victim"), nats.NoReconnect())
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(victim.Close)
+	page, err := m.Connections(ConnQuery{State: Open, Sort: "cid", Limit: 10, Name: "victim"})
+	if err != nil || len(page.Conns) != 1 {
+		t.Fatalf("victim not listed: %+v, %v", page, err)
+	}
+	target := page.Conns[0]
+
+	var notAllowed ErrNotAllowed
+	if err := monitorFor(t, c, "admin").Kick(target.Server, target.CID); !errors.As(err, &notAllowed) || notAllowed.Reason == "" {
+		t.Fatalf("admin kick: %v", err)
+	}
+	if err := m.Kick("nope", target.CID); !errors.Is(err, ErrNotFound) {
+		t.Fatalf("unknown server: %v", err)
+	}
+
+	// A brand-new session must be able to kick before it has listed anything.
+	nc, err := nats.Connect(c.Servers[0].ClientURL(), nats.UserInfo("sys", devPassword))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(nc.Close)
+	if err := New(nc).Kick(target.Server, target.CID); err != nil {
+		t.Fatal(err)
+	}
+	for deadline := time.Now().Add(5 * time.Second); !victim.IsClosed(); time.Sleep(50 * time.Millisecond) {
+		if time.Now().After(deadline) {
+			t.Fatal("client still connected after kick")
+		}
+	}
+	detail, err := m.Connection(target.Server, target.CID)
+	if err != nil || detail.Reason != "Kicked" {
+		t.Fatalf("closed reason: %+v, %v", detail, err)
+	}
+	if err := m.Kick(target.Server, target.CID); !errors.Is(err, ErrNotFound) {
+		t.Fatalf("kicking a gone client: %v", err)
 	}
 }
