@@ -108,10 +108,24 @@ export interface Capabilities {
 
 /** Chart-ready history: series[name][member][i] is the value at t[i] (unix s). */
 export interface MetricsWindow {
+  source?: DataSource;
   history_since: string;
   step: number;
   t: number[];
   series: Record<string, Record<string, (number | null)[]>>;
+}
+
+export interface JetStreamSummary {
+  source: DataSource;
+  partial: boolean;
+  servers: number;
+  expected: number;
+  memory: number;
+  storage: number;
+  max_memory: number; // -1 = unlimited
+  max_storage: number;
+  streams: number;
+  consumers: number;
 }
 
 export interface AccountInfo {
@@ -196,6 +210,8 @@ export const natsApi = {
 
   getCapabilities: (): Promise<Capabilities> =>
     apiRequest('/nats/capabilities'),
+
+  getJetStream: (): Promise<JetStreamSummary> => apiRequest('/nats/jetstream'),
 
   getMetrics: (series: string[], range: string): Promise<MetricsWindow> =>
     apiRequest(

@@ -2,6 +2,7 @@ import { HttpResponse, http } from 'msw';
 import account from './fixtures/account.json';
 import capabilities from './fixtures/capabilities.json';
 import info from './fixtures/info.json';
+import jetstream from './fixtures/jetstream.json';
 import kvBuckets from './fixtures/kv-buckets.json';
 import metrics from './fixtures/metrics.json';
 import status from './fixtures/status.json';
@@ -28,4 +29,5 @@ export const handlers = [
   http.get('/api/nats/streams', () => HttpResponse.json(streams)),
   http.get('/api/nats/kv/buckets', () => HttpResponse.json(kvBuckets)),
   http.get('/api/nats/metrics', () => HttpResponse.json(metrics)),
+  http.get('/api/nats/jetstream', () => HttpResponse.json(jetstream)),
 ];

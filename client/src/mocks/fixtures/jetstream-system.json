@@ -1,0 +1,12 @@
+{
+  "source": "system",
+  "partial": false,
+  "servers": 3,
+  "expected": 3,
+  "memory": 0,
+  "storage": 378000,
+  "max_memory": 3221225472,
+  "max_storage": 32212254720,
+  "streams": 2,
+  "consumers": 2
+}

@@ -144,6 +144,7 @@ func (h *History) flushMinute() {
 // Window is columnar, ready for a chart: Series[name][member][i] is the value
 // at T[i], nil where the member had none.
 type Window struct {
+	Source       string                           `json:"source,omitempty"`
 	HistorySince time.Time                        `json:"history_since"`
 	Step         int64                            `json:"step"` // seconds between points
 	T            []int64                          `json:"t"`

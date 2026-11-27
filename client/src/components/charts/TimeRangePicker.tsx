@@ -3,6 +3,13 @@ import { cn } from '@/lib/utils';
 
 export const RANGES = ['5m', '15m', '1h', '6h', '24h'] as const;
 export type Range = (typeof RANGES)[number];
+export const RANGE_SECONDS: Record<Range, number> = {
+  '5m': 300,
+  '15m': 900,
+  '1h': 3600,
+  '6h': 21_600,
+  '24h': 86_400,
+};
 
 /** The page's time range, kept in `?range=` so refresh and shared links keep it. */
 export function useTimeRange(fallback: Range = '1h') {

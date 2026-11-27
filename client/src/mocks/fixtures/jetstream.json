@@ -1,0 +1,12 @@
+{
+  "source": "account",
+  "partial": false,
+  "servers": 0,
+  "expected": 0,
+  "memory": 0,
+  "storage": 378000,
+  "max_memory": -1,
+  "max_storage": -1,
+  "streams": 2,
+  "consumers": 2
+}

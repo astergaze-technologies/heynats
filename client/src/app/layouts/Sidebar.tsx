@@ -62,7 +62,7 @@ const Sidebar = () => {
 
   const navItems = [
     {
-      name: 'Dashboard',
+      name: 'Overview',
       path: '/dashboard',
       icon: <LayoutDashboard className="h-5 w-5" />,
       exact: true,

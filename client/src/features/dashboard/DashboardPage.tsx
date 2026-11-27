@@ -2,7 +2,6 @@ import { Search, Unplug } from 'lucide-react';
 import { useState } from 'react';
 import { EmptyState, LoadingState } from '@/components/PageStates';
 import { SourceBadge } from '@/components/SourceBadge';
-import { ConnectionStats } from '@/components/StatsCard';
 import { Input } from '@/components/ui/input';
 import {
   useAccountInfo,
@@ -11,6 +10,9 @@ import {
 } from '@/features/connection/useNATS';
 import { formatRTT, formatTimestamp } from '@/lib/utils';
 import { ConnectionsTable } from './ConnectionsTable';
+import { OverviewStats } from './OverviewStats';
+import { PartialBanner } from './PartialBanner';
+import { TrafficCharts } from './TrafficCharts';
 
 function Field({
   label,
@@ -65,14 +67,6 @@ export function DashboardPage() {
 
   const info = accountInfo?.account_information;
   const connections = accountInfo?.connection_limits?.connections || [];
-  const totalMessages = connections.reduce(
-    (n, c) => n + c.in_msgs + c.out_msgs,
-    0
-  );
-  const totalBytes = connections.reduce(
-    (n, c) => n + c.in_bytes + c.out_bytes,
-    0
-  );
 
   const query = searchQuery.trim().toLowerCase();
   const filteredConnections = connections.filter(
@@ -85,14 +79,9 @@ export function DashboardPage() {
 
   return (
     <div className="space-y-4 p-4 sm:p-6">
-      {accountInfo && (
-        <ConnectionStats
-          totalConnections={accountInfo.connection_limits.total}
-          activeConnections={accountInfo.connection_limits.num_connections}
-          totalMessages={totalMessages}
-          totalBytes={totalBytes}
-        />
-      )}
+      <PartialBanner />
+      <OverviewStats />
+      <TrafficCharts />
 
       {info && (
         <section

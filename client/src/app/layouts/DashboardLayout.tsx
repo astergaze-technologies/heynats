@@ -23,7 +23,7 @@ export function DashboardLayout() {
   const title =
     typeof match?.handle.title === 'function'
       ? match.handle.title(match.params)
-      : (match?.handle.title ?? 'Dashboard');
+      : (match?.handle.title ?? 'Overview');
   const parent = match?.handle.parent;
 
   useEffect(() => {

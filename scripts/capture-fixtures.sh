@@ -22,6 +22,7 @@ get status status
 get info info
 get account account
 get capabilities capabilities
+get jetstream jetstream
 get streams streams
 get kv/buckets kv-buckets
 # Needs a minute of sampling and some traffic to be worth keeping.

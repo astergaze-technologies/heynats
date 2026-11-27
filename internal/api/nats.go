@@ -177,6 +177,16 @@ func (e *HeyNats) RegisterRoutes() {
 
 	api.GET("/metrics", e.middleware.RequireConnection(), getMetrics)
 
+	api.GET("/jetstream", e.middleware.RequireConnection(), func(c *gin.Context) {
+		conn, _ := GetNatsCredentialFromContext(c)
+		js, err := conn.Monitor.JetStream()
+		if err != nil {
+			c.JSON(http.StatusBadGateway, gin.H{"error": "Failed to read JetStream usage", "details": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, js)
+	})
+
 	api.GET("/account", e.middleware.RequireConnection(), func(c *gin.Context) {
 		natsConn, exists := c.Get(NatsConnectionKey)
 		if !exists {
